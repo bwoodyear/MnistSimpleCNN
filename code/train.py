@@ -1,4 +1,3 @@
-# imports -------------------------------------------------------------------------#
 import sys
 import os
 import argparse
@@ -19,37 +18,24 @@ from models.modelM5 import ModelM5
 from models.modelM7 import ModelM7
 
 
-def run(p_seed=0, p_epochs=150, p_kernel_size=5, p_logdir="temp"):
+def run(seed=0, epochs=150, kernel_size=5, p_logdir="temp"):
     # random number generator seed ------------------------------------------------#
-    SEED = p_seed
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    torch.manual_seed(SEED)
-    torch.cuda.manual_seed_all(SEED)
-    np.random.seed(SEED)
-
-    # kernel size of model --------------------------------------------------------#
-    KERNEL_SIZE = p_kernel_size
-
-    # number of epochs ------------------------------------------------------------#
-    NUM_EPOCHS = p_epochs
-
-    # file names ------------------------------------------------------------------#
-    if not os.path.exists("../logs/%s"%p_logdir):
-        os.makedirs("../logs/%s"%p_logdir)
-    OUTPUT_FILE = str("../logs/%s/log%03d.out"%(p_logdir,SEED))
-    MODEL_FILE = str("../logs/%s/model%03d.pth"%(p_logdir,SEED))
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
 
     # enable GPU usage ------------------------------------------------------------#
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
-    if use_cuda == False:
+    if not use_cuda:
         print("WARNING: CPU will be used for training.")
         exit(0)
 
     # data augmentation methods ---------------------------------------------------#
     transform = transforms.Compose([
-        RandomRotation(20, seed=SEED),
+        RandomRotation(20, seed=seed),
         transforms.RandomAffine(0, translate=(0.2, 0.2)),
         ])
 
@@ -60,11 +46,11 @@ def run(p_seed=0, p_epochs=150, p_kernel_size=5, p_logdir="temp"):
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False)
 
     # model selection -------------------------------------------------------------#
-    if(KERNEL_SIZE == 3):
+    if kernel_size == 3:
         model = ModelM3().to(device)
-    elif(KERNEL_SIZE == 5):
+    elif kernel_size == 5:
         model = ModelM5().to(device)
-    elif(KERNEL_SIZE == 7):
+    elif kernel_size == 7:
         model = ModelM7().to(device)
 
     summary(model, (1, 28, 28))
@@ -74,16 +60,12 @@ def run(p_seed=0, p_epochs=150, p_kernel_size=5, p_logdir="temp"):
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.98)
 
-    # delete result file ----------------------------------------------------------#
-    f = open(OUTPUT_FILE, 'w')
-    f.close()
-
     # global variables ------------------------------------------------------------#
     g_step = 0
     max_correct = 0
 
     # training and evaluation loop ------------------------------------------------#
-    for epoch in range(NUM_EPOCHS):
+    for epoch in range(epochs):
         # --------------------------------------------------------------------------#
         # train process                                                             #
         # --------------------------------------------------------------------------#
@@ -127,8 +109,7 @@ def run(p_seed=0, p_epochs=150, p_kernel_size=5, p_logdir="temp"):
                 total_pred = np.append(total_pred, pred.cpu().numpy())
                 total_target = np.append(total_target, target.cpu().numpy())
                 correct += pred.eq(target.view_as(pred)).sum().item()
-            if(max_correct < correct):
-                torch.save(model.state_dict(), MODEL_FILE)
+            if max_correct < correct:
                 max_correct = correct
                 print("Best accuracy! correct images: %5d"%correct)
         ema.resume(model)
@@ -141,10 +122,6 @@ def run(p_seed=0, p_epochs=150, p_kernel_size=5, p_logdir="temp"):
         best_test_accuracy = 100 * max_correct / len(test_loader.dataset)
         print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%) (best: {:.2f}%)\n'.format(
             test_loss, correct, len(test_loader.dataset), test_accuracy, best_test_accuracy))
-
-        f = open(OUTPUT_FILE, 'a')
-        f.write(" %3d %12.6f %9.3f %12.6f %9.3f %9.3f\n"%(epoch, train_loss, train_accuracy, test_loss, test_accuracy, best_test_accuracy))
-        f.close()
 
         # --------------------------------------------------------------------------#
         # update learning rate scheduler                                            #
@@ -164,7 +141,7 @@ if __name__ == "__main__":
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
     for i in range(args.trials):
-        run(p_seed=args.seed + i,
-            p_epochs=args.epochs,
-            p_kernel_size=args.kernel_size,
+        run(seed=args.seed + i,
+            epochs=args.epochs,
+            kernel_size=args.kernel_size,
             p_logdir=args.logdir)

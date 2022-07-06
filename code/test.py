@@ -1,8 +1,5 @@
-# imports ---------------------------------------------------------------------#
 import sys
 import os
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import argparse
 import numpy as np 
 import math
@@ -19,6 +16,9 @@ from models.modelM3 import ModelM3
 from models.modelM5 import ModelM5
 from models.modelM7 import ModelM7
 
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
 def run(p_seed=0, p_kernel_size=5, p_logdir="temp"):
 
     # enable GPU usage ------------------------------------------------------------#
@@ -33,12 +33,14 @@ def run(p_seed=0, p_kernel_size=5, p_logdir="temp"):
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False)
 
     # model selection -------------------------------------------------------------#
-    if(p_kernel_size == 3):
+    if p_kernel_size == 3:
         model1 = ModelM3().to(device)
-    elif(p_kernel_size == 5):
+    elif p_kernel_size == 5:
         model1 = ModelM5().to(device)
-    elif(p_kernel_size == 7):
+    elif p_kernel_size == 7:
         model1 = ModelM7().to(device)
+    else:
+        raise ValueError
 
     model1.load_state_dict(torch.load("../logs/%s/model%03d.pth"%(p_logdir,p_seed)))
 
