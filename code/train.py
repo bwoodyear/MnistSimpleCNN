@@ -18,6 +18,7 @@ from models.modelM3 import ModelM3
 from models.modelM5 import ModelM5
 from models.modelM7 import ModelM7
 
+
 def run(p_seed=0, p_epochs=150, p_kernel_size=5, p_logdir="temp"):
     # random number generator seed ------------------------------------------------#
     SEED = p_seed
@@ -83,9 +84,9 @@ def run(p_seed=0, p_epochs=150, p_kernel_size=5, p_logdir="temp"):
 
     # training and evaluation loop ------------------------------------------------#
     for epoch in range(NUM_EPOCHS):
-        #--------------------------------------------------------------------------#
-        # train process                                                            #
-        #--------------------------------------------------------------------------#
+        # --------------------------------------------------------------------------#
+        # train process                                                             #
+        # --------------------------------------------------------------------------#
         model.train()
         train_loss = 0
         train_corr = 0
@@ -108,9 +109,9 @@ def run(p_seed=0, p_epochs=150, p_kernel_size=5, p_logdir="temp"):
         train_loss /= len(train_loader.dataset)
         train_accuracy = 100 * train_corr / len(train_loader.dataset)
 
-        #--------------------------------------------------------------------------#
-        # test process                                                             #
-        #--------------------------------------------------------------------------#
+        # --------------------------------------------------------------------------#
+        # test process                                                              #
+        # --------------------------------------------------------------------------#
         model.eval()
         ema.assign(model)
         test_loss = 0
@@ -132,9 +133,9 @@ def run(p_seed=0, p_epochs=150, p_kernel_size=5, p_logdir="temp"):
                 print("Best accuracy! correct images: %5d"%correct)
         ema.resume(model)
 
-        #--------------------------------------------------------------------------#
-        # output                                                                   #
-        #--------------------------------------------------------------------------#
+        # --------------------------------------------------------------------------#
+        # output                                                                    #
+        # --------------------------------------------------------------------------#
         test_loss /= len(test_loader.dataset)
         test_accuracy = 100 * correct / len(test_loader.dataset)
         best_test_accuracy = 100 * max_correct / len(test_loader.dataset)
@@ -145,10 +146,11 @@ def run(p_seed=0, p_epochs=150, p_kernel_size=5, p_logdir="temp"):
         f.write(" %3d %12.6f %9.3f %12.6f %9.3f %9.3f\n"%(epoch, train_loss, train_accuracy, test_loss, test_accuracy, best_test_accuracy))
         f.close()
 
-        #--------------------------------------------------------------------------#
-        # update learning rate scheduler                                           #
-        #--------------------------------------------------------------------------#
+        # --------------------------------------------------------------------------#
+        # update learning rate scheduler                                            #
+        # --------------------------------------------------------------------------#
         lr_scheduler.step()
+
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
@@ -159,10 +161,10 @@ if __name__ == "__main__":
     p.add_argument("--gpu", default=0, type=int)
     p.add_argument("--logdir", default="temp")
     args = p.parse_args()
-    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu)
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
     for i in range(args.trials):
-        run(p_seed = args.seed + i,
-            p_epochs = args.epochs,
-            p_kernel_size = args.kernel_size,
-            p_logdir = args.logdir)
+        run(p_seed=args.seed + i,
+            p_epochs=args.epochs,
+            p_kernel_size=args.kernel_size,
+            p_logdir=args.logdir)
