@@ -30,7 +30,7 @@ def read_data_files(dataset_name, split):
 
 
 class MnistDataset(torch.utils.data.Dataset):
-    def __init__(self, training=True, transform=None, regular=False, fashion=False, training_type='continual'):
+    def __init__(self, training=True, transform=None, regular=False, fashion=False):
         """
         Create the class for MNIST datasets.
 
@@ -38,11 +38,10 @@ class MnistDataset(torch.utils.data.Dataset):
         :param transform: torchvision transforms, what transformations to apply to the images
         :param regular: bool, whether to load the regular MNIST dataset
         :param fashion: bool, whether to load the fashion MNIST dataset
-        :param training_type: str, gives the training type e.g. 'continual' or 'multi-task'
         """
 
         # If testing
-        if not training or training_type == 'multi-task':
+        if regular and fashion:
             # Get the test images and labels for MNIST and FashionMNIST
             x_regular, y_regular = read_data_files('MNIST', 'test')
             x_fashion, y_fashion = read_data_files('FashionMNIST', 'test')
@@ -54,15 +53,12 @@ class MnistDataset(torch.utils.data.Dataset):
             # Shuffle the image and label arrays, keep the same seed for now
             xs, ys = shuffle(xs, ys, random_state=0)
 
-        elif training_type == 'continual':
-            if regular:
-                xs, ys = read_data_files('MNIST', 'train')
-            elif fashion:
-                xs, ys = read_data_files('FashionMNIST', 'train')
-            else:
-                raise ValueError('One of regular or fashion MNIST must be selected.')
+        elif regular:
+            xs, ys = read_data_files('MNIST', 'train')
+        elif fashion:
+            xs, ys = read_data_files('FashionMNIST', 'train')
         else:
-            raise ValueError(f'Check training_type: {training_type}')
+            raise ValueError('One of regular or fashion MNIST must be selected.')
 
         self.x_data = xs
         self.y_data = ys

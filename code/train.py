@@ -1,6 +1,7 @@
 import os
 import argparse
 import logging
+from collections import OrderedDict
 import numpy as np
 import wandb
 import torch
@@ -44,14 +45,12 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
     if training_type == 'multi-task':
         train_dataset = MnistDataset(training=True, transform=transform,
-                                     training_type=training_type)
+                                     regular=True, fashion=True)
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=120, shuffle=True)
-        loader_array = [train_loader]
+        train_loader_dict = {'combined': train_loader}
     elif training_type == 'continual':
-        regular_dataset = MnistDataset(training=True, transform=transform,
-                                       training_type=training_type, regular=True)
-        fashion_dataset = MnistDataset(training=True, transform=transform,
-                                       training_type=training_type, regular=True)
+        regular_dataset = MnistDataset(training=True, transform=transform, regular=True)
+        fashion_dataset = MnistDataset(training=True, transform=transform, fashion=True)
 
         # Create a loader for each of the datasets
         regular_loader = torch.utils.data.DataLoader(regular_dataset, batch_size=120, shuffle=True)
@@ -59,16 +58,21 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
         # Put the data loaders in the specified order
         if continual_order == 'regular_first':
-            loader_array = [regular_loader, fashion_loader]
+            train_loader_dict = OrderedDict([('regular', regular_loader), ('fashion', fashion_loader)])
         elif continual_order == 'fashion_first':
-            loader_array = [fashion_loader, regular_loader]
+            train_loader_dict = OrderedDict([('fashion', fashion_loader), ('regular', regular_loader)])
         else:
             raise ValueError(f'Continual learning with this order: {continual_order} not recognised')
     else:
         raise NotImplementedError(f'This training type: {training_type} has not been implemented.')
 
-    test_dataset = MnistDataset(training=False, transform=None)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False)
+    regular_test_dataset = MnistDataset(training=False, transform=None, regular=True)
+    regular_test_loader = torch.utils.data.DataLoader(regular_test_dataset, batch_size=100, shuffle=False)
+
+    fashion_test_dataset = MnistDataset(training=False, transform=None, fashion=True)
+    fashion_test_loader = torch.utils.data.DataLoader(fashion_test_dataset, batch_size=100, shuffle=False)
+
+    test_loader_dict = {'regular': regular_test_loader, 'fashion': fashion_test_loader}
 
     # model selection -------------------------------------------------------------#
     if kernel_size == 3:
@@ -100,7 +104,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     max_correct = 0
 
     # training and evaluation loop ------------------------------------------------#
-    for train_loader in loader_array:
+    for train_dataset_name, train_loader in train_loader_dict.items():
         for epoch in range(epochs):
 
             # --------------------------------------------------------------------------#
@@ -125,54 +129,60 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                 g_step += 1
                 ema(model, g_step)
 
-                # if not batch_idx % 100:
-                #     wandb.log({'batch train loss': loss.item()})
-                # print(f'Train Epoch: {epoch} [{batch_idx * len(data):05d}/{len(train_loader.dataset)} '
-                #       f'({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
-
             train_loss /= len(train_loader.dataset)
             train_accuracy = 100 * train_corr / len(train_loader.dataset)
 
-            wandb.log({'epoch train loss': train_loss,
-                       'epoch train accuracy': train_accuracy})
+            wandb.log({f'{train_dataset_name} epoch train loss': train_loss,
+                       f'{train_dataset_name} epoch train accuracy': train_accuracy})
 
             # --------------------------------------------------------------------------#
             # test process                                                              #
             # --------------------------------------------------------------------------#
             model.eval()
             ema.assign(model)
-            test_loss = 0
-            correct = 0
+
+            total_test_loss = 0
+            total_correct = 0
             total_pred = np.zeros(0)
             total_target = np.zeros(0)
+
+            # Keep track of loss and correct predictions for each dataset
+            dataset_test_loss = {'regular dataset loss': 0, 'fashion dataset loss': 0}
+            dataset_correct = {'regular dataset correct': 0, 'fashion dataset correct': 0}
+
             with torch.no_grad():
-                for data, target in test_loader:
-                    data, target = data.to(device), target.to(device,  dtype=torch.int64)
-                    output = model(data)
+                for test_dataset_name, test_loader in test_loader_dict.items():
+                    for data, target in test_loader:
+                        data, target = data.to(device), target.to(device,  dtype=torch.int64)
+                        output = model(data)
 
-                    test_loss += F.nll_loss(output, target, reduction='sum').item()
-                    pred = output.argmax(dim=1, keepdim=True)
-                    total_pred = np.append(total_pred, pred.cpu().numpy())
-                    total_target = np.append(total_target, target.cpu().numpy())
-                    correct += pred.eq(target.view_as(pred)).sum().item()
+                        loss = F.nll_loss(output, target, reduction='sum').item()
+                        total_test_loss += loss
+                        dataset_test_loss[test_dataset_name] += loss
 
-                if max_correct < correct:
-                    max_correct = correct
-                    logging.info(f"Best accuracy! correct images: {correct}")
+                        pred = output.argmax(dim=1, keepdim=True)
+                        total_pred = np.append(total_pred, pred.cpu().numpy())
+                        total_target = np.append(total_target, target.cpu().numpy())
+                        
+                        batch_correct = pred.eq(target.view_as(pred)).sum().item()
+                        total_correct += batch_correct
+                        dataset_correct[test_dataset_name] += batch_correct
+
+                    if max_correct < total_correct:
+                        max_correct = total_correct
+                        logging.info(f"Best accuracy! correct images: {total_correct}")
             ema.resume(model)
 
             # --------------------------------------------------------------------------#
             # output                                                                    #
             # --------------------------------------------------------------------------#
-            test_loss /= len(test_loader.dataset)
-            test_accuracy = 100 * correct / len(test_loader.dataset)
-            best_test_accuracy = 100 * max_correct / len(test_loader.dataset)
+            total_test_loss /= len(test_loader.dataset)
+            test_accuracy = 100 * total_correct / 20000
 
-            wandb.log({'epoch test loss': test_loss,
+            wandb.log({'epoch test loss': total_test_loss,
                        'epoch test accuracy': test_accuracy})
-
-            logging.info(f'\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)}'
-                         f' ({test_accuracy:.2f}%) (best: {best_test_accuracy:.2f}%)\n')
+            wandb.log(dataset_test_loss)
+            wandb.log({k: v/10000 for k, v in dataset_correct.items()})
 
             # --------------------------------------------------------------------------#
             # update learning rate scheduler                                            #
