@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class ModelM3(nn.Module):
     def __init__(self):
         super(ModelM3, self).__init__()
@@ -27,6 +28,7 @@ class ModelM3(nn.Module):
         self.conv10_bn = nn.BatchNorm2d(176)
         self.fc1 = nn.Linear(11264, 10, bias=False)
         self.fc1_bn = nn.BatchNorm1d(10)
+
     def get_logits(self, x):
         x = (x - 0.5) * 2.0
         conv1 = F.relu(self.conv1_bn(self.conv1(x)))
@@ -42,6 +44,7 @@ class ModelM3(nn.Module):
         flat1 = torch.flatten(conv10.permute(0, 2, 3, 1), 1)
         logits = self.fc1_bn(self.fc1(flat1))
         return logits
+
     def forward(self, x):
         logits = self.get_logits(x)
         return F.log_softmax(logits, dim=1)

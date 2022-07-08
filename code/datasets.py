@@ -1,27 +1,69 @@
+import os
 import torch
 import numpy as np
 from PIL import Image
+from sklearn.utils import shuffle
 from torchvision import transforms
+
+dirname = os.path.dirname(__file__)
+
+
+def read_data_files(dataset_name, split):
+    assert dataset_name in {'MNIST', 'FashionMNIST'}
+    assert split in {'train', 'test'}
+
+    folder_path = os.path.join(dirname, '..', 'data', dataset_name, 'raw')
+    file_prefix = 't10k' if split == 'test' else split
+    image_file = f'{file_prefix}-images-idx3-ubyte'
+    label_file = f'{file_prefix}-labels-idx1-ubyte'
+
+    with open(os.path.join(folder_path, image_file), 'rb') as f:
+        xs = np.array(np.frombuffer(f.read(), np.uint8, offset=16))
+
+    with open(os.path.join(folder_path, label_file), 'rb') as f:
+        ys = np.array(np.frombuffer(f.read(), np.uint8, offset=8))
+
+    xs = np.reshape(xs, (-1, 28, 28, 1)).astype(np.float32)
+    ys = ys.astype(np.int)
+
+    return xs, ys
 
 
 class MnistDataset(torch.utils.data.Dataset):
-    def __init__(self, training=True, transform=None, folder_name='MNIST'):
-        if training:
-            f = open(f'../data/{folder_name}/raw/train-images-idx3-ubyte', 'rb')
-            xs = np.array(np.frombuffer(f.read(), np.uint8, offset=16))
-            f.close()
-            f = open(f'../data/{folder_name}/raw/train-labels-idx1-ubyte', 'rb')
-            ys = np.array(np.frombuffer(f.read(), np.uint8, offset=8))
-            f.close()
+    def __init__(self, training=True, transform=None, regular=False, fashion=False, training_type='continual'):
+        """
+        Create the class for MNIST datasets.
+
+        :param training: bool, whether this is the training or test set
+        :param transform: torchvision transforms, what transformations to apply to the images
+        :param regular: bool, whether to load the regular MNIST dataset
+        :param fashion: bool, whether to load the fashion MNIST dataset
+        :param training_type: str, gives the training type e.g. 'continual' or 'multi-task'
+        """
+
+        # If testing
+        if not training or training_type == 'multi-task':
+            # Get the test images and labels for MNIST and FashionMNIST
+            x_regular, y_regular = read_data_files('MNIST', 'test')
+            x_fashion, y_fashion = read_data_files('FashionMNIST', 'test')
+
+            # Join both datasets together
+            xs = np.concatenate([x_regular, x_fashion], axis=0)
+            ys = np.concatenate([y_regular, y_fashion], axis=0)
+
+            # Shuffle the image and label arrays, keep the same seed for now
+            xs, ys = shuffle(xs, ys, random_state=0)
+
+        elif training_type == 'continual':
+            if regular:
+                xs, ys = read_data_files('MNIST', 'train')
+            elif fashion:
+                xs, ys = read_data_files('FashionMNIST', 'train')
+            else:
+                raise ValueError('One of regular or fashion MNIST must be selected.')
         else:
-            f = open(f'../data/{folder_name}/raw/t10k-images-idx3-ubyte', 'rb')
-            xs = np.array(np.frombuffer(f.read(), np.uint8, offset=16))
-            f.close()
-            f = open(f'../data/{folder_name}/raw/t10k-labels-idx1-ubyte', 'rb')
-            ys = np.array(np.frombuffer(f.read(), np.uint8, offset=8))
-            f.close()
-        xs = np.reshape(xs, (-1, 28, 28, 1)).astype(np.float32)
-        ys = ys.astype(np.int)
+            raise ValueError(f'Check training_type: {training_type}')
+
         self.x_data = xs
         self.y_data = ys
         self.transform = transform

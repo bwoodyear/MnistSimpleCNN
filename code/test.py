@@ -1,23 +1,16 @@
-import sys
 import os
 import argparse
-import numpy as np 
-import math
+import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
-from torchvision import datasets, transforms
-from PIL import Image
-from ema import EMA
 from datasets import MnistDataset
-from transforms import RandomRotation
 from models.modelM3 import ModelM3
 from models.modelM5 import ModelM5
 from models.modelM7 import ModelM7
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
 
 def run(p_seed=0, p_kernel_size=5, p_logdir="temp"):
 
@@ -59,6 +52,7 @@ def run(p_seed=0, p_kernel_size=5, p_logdir="temp"):
 
     np.savetxt("../logs/%s/wrong%03d.txt"%(p_logdir,p_seed), wrong_images, fmt="%d")
     #print(len(wrong_images), wrong_images)
+
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
