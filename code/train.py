@@ -106,7 +106,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     # training and evaluation loop ------------------------------------------------#
     for train_dataset_name, train_loader in train_loader_dict.items():
         for epoch in range(epochs):
-
+            logging.info(f'Starting epoch {epoch} of {train_dataset_name} MNIST')
             # --------------------------------------------------------------------------#
             # train process                                                             #
             # --------------------------------------------------------------------------#
@@ -158,7 +158,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
                         loss = F.nll_loss(output, target, reduction='sum').item()
                         total_test_loss += loss
-                        dataset_test_loss[test_dataset_name] += loss
+                        dataset_test_loss[f'{test_dataset_name} dataset loss'] += loss
 
                         pred = output.argmax(dim=1, keepdim=True)
                         total_pred = np.append(total_pred, pred.cpu().numpy())
@@ -166,7 +166,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                         
                         batch_correct = pred.eq(target.view_as(pred)).sum().item()
                         total_correct += batch_correct
-                        dataset_correct[test_dataset_name] += batch_correct
+                        dataset_correct[f'{test_dataset_name} dataset correct'] += batch_correct
 
                     if max_correct < total_correct:
                         max_correct = total_correct
@@ -181,6 +181,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
             wandb.log({'epoch test loss': total_test_loss,
                        'epoch test accuracy': test_accuracy})
+
             wandb.log(dataset_test_loss)
             wandb.log({k: v/10000 for k, v in dataset_correct.items()})
 
@@ -197,7 +198,13 @@ if __name__ == "__main__":
     p.add_argument("--kernel_size", default=5, type=int)
     p.add_argument("--training_type", required=True, type=str)
     p.add_argument("--continual_order", default='regular_first', type=str)
+    p.add_argument("--verbose", default=True, type=bool)
     args = p.parse_args()
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.INFO)
+    else:
+        logging.disable(logging.CRITICAL)
 
     run(seed=args.seed,
         epochs=args.epochs,
