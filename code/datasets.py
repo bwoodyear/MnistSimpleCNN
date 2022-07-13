@@ -39,12 +39,12 @@ class MnistDataset(torch.utils.data.Dataset):
         :param regular: bool, whether to load the regular MNIST dataset
         :param fashion: bool, whether to load the fashion MNIST dataset
         """
-
+        split = 'train' if training else 'test'
         # If testing
         if regular and fashion:
             # Get the test images and labels for MNIST and FashionMNIST
-            x_regular, y_regular = read_data_files('MNIST', 'test')
-            x_fashion, y_fashion = read_data_files('FashionMNIST', 'test')
+            x_regular, y_regular = read_data_files('MNIST', split)
+            x_fashion, y_fashion = read_data_files('FashionMNIST', split)
 
             # Join both datasets together
             xs = np.concatenate([x_regular, x_fashion], axis=0)
@@ -54,9 +54,9 @@ class MnistDataset(torch.utils.data.Dataset):
             xs, ys = shuffle(xs, ys, random_state=0)
 
         elif regular:
-            xs, ys = read_data_files('MNIST', 'train')
+            xs, ys = read_data_files('MNIST', split)
         elif fashion:
-            xs, ys = read_data_files('FashionMNIST', 'train')
+            xs, ys = read_data_files('FashionMNIST', split)
         else:
             raise ValueError('One of regular or fashion MNIST must be selected.')
 
