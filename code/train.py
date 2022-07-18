@@ -12,6 +12,9 @@ from torchsummary import summary
 from ema import EMA
 from datasets import MnistDataset
 from transforms import RandomRotation
+from models.modelM3 import ModelM3
+from models.modelM5 import ModelM5
+from models.modelM7 import ModelM7
 from models.base_model import Model
 import ipdb
 
@@ -51,53 +54,54 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     # regular_test_loader = torch.utils.data.DataLoader(regular_test_dataset, batch_size=100, shuffle=False)
     # test_loader_dict = {'regular': regular_test_loader}
 
-    # Test just fashion dataset
-    fashion_dataset = MnistDataset(training=True, transform=transform, fashion=True)
-    fashion_loader = torch.utils.data.DataLoader(fashion_dataset, batch_size=120, shuffle=True)
-    train_loader_dict = {'fashion': fashion_loader}
-
-    fashion_test_dataset = MnistDataset(training=False, transform=None, fashion=True)
-    fashion_test_loader = torch.utils.data.DataLoader(fashion_test_dataset, batch_size=100, shuffle=False)
-    test_loader_dict = {'fashion': fashion_test_loader}
-
-
-    #
-    # if training_type in {'multi-task', 'multi-task_labels'}:
-    #     train_dataset = MnistDataset(training=True, transform=transform,
-    #                                  regular=True, fashion=True)
-    #     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=120, shuffle=True)
-    #     train_loader_dict = {'combined': train_loader}
-    # elif training_type == 'continual':
-    #     regular_dataset = MnistDataset(training=True, transform=transform, regular=True)
-    #     fashion_dataset = MnistDataset(training=True, transform=transform, fashion=True)
-    #
-    #     # Create a loader for each of the datasets
-    #     regular_loader = torch.utils.data.DataLoader(regular_dataset, batch_size=120, shuffle=True)
-    #     fashion_loader = torch.utils.data.DataLoader(fashion_dataset, batch_size=120, shuffle=True)
-    #
-    #     # Put the data loaders in the specified order
-    #     if continual_order == 'regular_first':
-    #         train_loader_dict = OrderedDict([('regular', regular_loader), ('fashion', fashion_loader)])
-    #     elif continual_order == 'fashion_first':
-    #         train_loader_dict = OrderedDict([('fashion', fashion_loader), ('regular', regular_loader)])
-    #     else:
-    #         raise ValueError(f'Continual learning with this order: {continual_order} not recognised')
-    # else:
-    #     raise NotImplementedError(f'This training type: {training_type} has not been implemented.')
-    #
-    # regular_test_dataset = MnistDataset(training=False, transform=None, regular=True)
-    # regular_test_loader = torch.utils.data.DataLoader(regular_test_dataset, batch_size=100, shuffle=False)
+    # # Test just fashion dataset
+    # fashion_dataset = MnistDataset(training=True, transform=transform, fashion=True)
+    # fashion_loader = torch.utils.data.DataLoader(fashion_dataset, batch_size=120, shuffle=True)
+    # train_loader_dict = {'fashion': fashion_loader}
     #
     # fashion_test_dataset = MnistDataset(training=False, transform=None, fashion=True)
     # fashion_test_loader = torch.utils.data.DataLoader(fashion_test_dataset, batch_size=100, shuffle=False)
-    #
-    # test_loader_dict = {'regular': regular_test_loader, 'fashion': fashion_test_loader}
+    # test_loader_dict = {'fashion': fashion_test_loader}
+
+
+
+    if training_type in {'multi-task', 'multi-task_labels'}:
+        train_dataset = MnistDataset(training=True, transform=transform,
+                                     regular=True, fashion=True)
+        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=120, shuffle=True)
+        train_loader_dict = {'combined': train_loader}
+    elif training_type == 'continual':
+        regular_dataset = MnistDataset(training=True, transform=transform, regular=True)
+        fashion_dataset = MnistDataset(training=True, transform=transform, fashion=True)
+
+        # Create a loader for each of the datasets
+        regular_loader = torch.utils.data.DataLoader(regular_dataset, batch_size=120, shuffle=True)
+        fashion_loader = torch.utils.data.DataLoader(fashion_dataset, batch_size=120, shuffle=True)
+
+        # Put the data loaders in the specified order
+        if continual_order == 'regular_first':
+            train_loader_dict = OrderedDict([('regular', regular_loader), ('fashion', fashion_loader)])
+        elif continual_order == 'fashion_first':
+            train_loader_dict = OrderedDict([('fashion', fashion_loader), ('regular', regular_loader)])
+        else:
+            raise ValueError(f'Continual learning with this order: {continual_order} not recognised')
+    else:
+        raise NotImplementedError(f'This training type: {training_type} has not been implemented.')
+
+    regular_test_dataset = MnistDataset(training=False, transform=None, regular=True)
+    regular_test_loader = torch.utils.data.DataLoader(regular_test_dataset, batch_size=100, shuffle=False)
+
+    fashion_test_dataset = MnistDataset(training=False, transform=None, fashion=True)
+    fashion_test_loader = torch.utils.data.DataLoader(fashion_test_dataset, batch_size=100, shuffle=False)
+
+    test_loader_dict = {'regular': regular_test_loader, 'fashion': fashion_test_loader}
 
     # ipdb.set_trace()
 
     # model selection -------------------------------------------------------------#
 
-    model = Model(kernel_size).to(device)
+    # model = Model(kernel_size).to(device)
+    model = ModelM5().to(device)
 
     output_path = os.path.join(dirname, '..', 'logs')
     wandb.init(project='mnist-baselines',
@@ -123,7 +127,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
         # lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.98)
 
         for epoch in range(epochs):
-            logging.info(f'Starting epoch {epoch+1} of {train_dataset_name} MNIST')
+            logging.info(f'starting epoch {epoch+1} of {train_dataset_name} MNIST')
             # --------------------------------------------------------------------------#
             # train process                                                             #
             # --------------------------------------------------------------------------#
@@ -172,6 +176,9 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
             dataset_test_loss = {'regular dataset test loss': 0, 'fashion dataset test loss': 0}
             dataset_correct = {'regular dataset test correct': 0, 'fashion dataset test correct': 0}
 
+            # dataset_test_loss = {'fashion dataset test loss': 0}
+            # dataset_correct = {'fashion dataset test correct': 0}
+
             with torch.no_grad():
                 for test_dataset_name, test_loader in test_loader_dict.items():
                     for data, target in test_loader:
@@ -185,6 +192,10 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                             output = model(data)
 
                         loss = F.nll_loss(output, target, reduction='sum').item()
+
+                        if np.isnan(loss):
+                            ipdb.set_trace()
+
                         total_test_loss += loss
                         dataset_test_loss[f'{test_dataset_name} dataset test loss'] += loss
 
@@ -204,13 +215,12 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
             # --------------------------------------------------------------------------#
             # output                                                                    #
             # --------------------------------------------------------------------------#
-            test_points = sum(len(dl.dataset) for dl in test_loader_dict.values())
             # test_points = 2e4
+            test_points = sum(len(dl.dataset) for dl in test_loader_dict.values())
             total_test_loss /= test_points
             test_accuracy = 100 * total_correct / test_points
 
-            print(f'test_points: {test_points}')
-            print(f'total_correct: {total_correct}')
+            logging.info(f'epoch {epoch+1} test accuracy: {test_accuracy}')
 
             wandb.log({'epoch test loss': total_test_loss,
                        'epoch test accuracy': test_accuracy})
