@@ -2,5 +2,4 @@ numpy
 pandas
 scipy
 wand
-PIL
 ipdb
