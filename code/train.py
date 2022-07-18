@@ -114,8 +114,8 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
     # hyperparameter selection ----------------------------------------------------#
     ema = EMA(model, decay=0.999)
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.98)
+    optimizer = optim.Adam(model.parameters(), lr=0.005)
+    # lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.98)
 
     # global variables ------------------------------------------------------------#
     g_step = 0
@@ -193,8 +193,8 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
                         loss = F.nll_loss(output, target, reduction='sum').item()
 
-                        if np.isnan(loss):
-                            ipdb.set_trace()
+                        # if np.isnan(loss):
+                        #     ipdb.set_trace()
 
                         total_test_loss += loss
                         dataset_test_loss[f'{test_dataset_name} dataset test loss'] += loss
@@ -231,7 +231,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
             # --------------------------------------------------------------------------#
             # update learning rate scheduler                                            #
             # --------------------------------------------------------------------------#
-            lr_scheduler.step()
+            # lr_scheduler.step()
 
 
 if __name__ == "__main__":

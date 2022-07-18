@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class ModelM5(nn.Module):
-    def __init__(self):
+    def __init__(self, label_layer: int = None):
         super(ModelM5, self).__init__()
         self.conv1 = nn.Conv2d(1, 32, 5, bias=False)
         self.conv1_bn = nn.BatchNorm2d(32)
@@ -30,6 +30,6 @@ class ModelM5(nn.Module):
         logits = self.fc1_bn(self.fc1(flat5))
         return logits
 
-    def forward(self, x):
+    def forward(self, x, label_value: int = None, device: str = None):
         logits = self.get_logits(x)
         return F.log_softmax(logits, dim=1)
