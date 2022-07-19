@@ -242,13 +242,13 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--seed", default=0, type=int)
+    p.add_argument("--seed", default=0, type=int, nargs='*')
     p.add_argument("--epochs", default=10, type=int)
     p.add_argument("--kernel_size", default=5, type=int)
     p.add_argument("--training_type", required=True, type=str)
     p.add_argument("--continual_order", default='', type=str)
     p.add_argument("--label_level", default=1, type=int)
-    p.add_argument("--verbose", default=True, type=bool)
+    p.add_argument("-v", "--verbose", default=True, type=bool)
     args = p.parse_args()
 
     if args.verbose:
@@ -256,8 +256,9 @@ if __name__ == "__main__":
     else:
         logging.disable(logging.CRITICAL)
 
-    run(seed=args.seed,
-        epochs=args.epochs,
-        kernel_size=args.kernel_size,
-        training_type=args.training_type,
-        continual_order=args.continual_order)
+    for s in args.seed:
+        run(seed=s,
+            epochs=args.epochs,
+            kernel_size=args.kernel_size,
+            training_type=args.training_type,
+            continual_order=args.continual_order)
