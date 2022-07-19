@@ -106,8 +106,8 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     summary(model, (1, 28, 28))
 
     # hyperparameter selection ----------------------------------------------------#
-    learning_rate = 1e-4
-    exp_lr_gamma = 0.60
+    learning_rate = 1e-3
+    exp_lr_gamma = 0.95
 
     ema = EMA(model, decay=0.999)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
