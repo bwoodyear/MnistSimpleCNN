@@ -115,7 +115,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     for train_dataset_name, train_loader in train_loader_dict.items():
         for epoch in range(epochs):
             logging.info(f'starting epoch {epoch+1} of {train_dataset_name} MNIST')
-            logging.info(f'current learning rate: {lr_scheduler.get_lr()[0]:.1E}')
+            logging.info(f'current learning rate: {lr_scheduler.get_last_lr()[0]:.1E}')
 
             # --------------------------------------------------------------------------#
             # train process                                                             #
@@ -241,7 +241,7 @@ if __name__ == "__main__":
         logging.disable(logging.CRITICAL)
 
     for s in args.seed:
-        logging.info(f'\nStaring run with seed {s}\n')
+        logging.info(f'\n\nStaring run with seed {s}\n')
         run(seed=s,
             epochs=args.epochs,
             kernel_size=args.kernel_size,
