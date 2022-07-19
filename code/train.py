@@ -3,6 +3,7 @@ import argparse
 import logging
 from collections import OrderedDict
 import numpy as np
+import torchvision.transforms
 import wandb
 import torch
 import torch.nn.functional as F
@@ -41,8 +42,8 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
     # data augmentation methods ---------------------------------------------------#
     transform = transforms.Compose([
-        RandomRotation(20, seed=seed),
-        transforms.RandomAffine(0, translate=(0.2, 0.2)),
+        transforms.RandomRotation(20, interpolation=torchvision.transforms.InterpolationMode.NEAREST),
+        transforms.RandomAffine(0, translate=(0.2, 0.2), interpolation=torchvision.transforms.InterpolationMode.NEAREST)
     ])
 
     # data loader -----------------------------------------------------------------#
