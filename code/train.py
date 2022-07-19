@@ -113,7 +113,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     # hyperparameter selection ----------------------------------------------------#
     ema = EMA(model, decay=0.999)
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
-    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.90)
+    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.60)
 
     # global variables ------------------------------------------------------------#
     g_step = 0
