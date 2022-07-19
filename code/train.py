@@ -63,8 +63,6 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     # fashion_test_loader = torch.utils.data.DataLoader(fashion_test_dataset, batch_size=100, shuffle=False)
     # test_loader_dict = {'fashion': fashion_test_loader}
 
-
-
     if training_type in {'multi-task', 'multi-task_labels'}:
         train_dataset = MnistDataset(training=True, transform=transform,
                                      regular=True, fashion=True)
@@ -115,7 +113,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     # hyperparameter selection ----------------------------------------------------#
     ema = EMA(model, decay=0.999)
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
-    # lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.98)
+    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.90)
 
     # global variables ------------------------------------------------------------#
     g_step = 0
@@ -231,7 +229,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
             # --------------------------------------------------------------------------#
             # update learning rate scheduler                                            #
             # --------------------------------------------------------------------------#
-            # lr_scheduler.step()
+            lr_scheduler.step()
 
 
 if __name__ == "__main__":
