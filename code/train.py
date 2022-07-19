@@ -228,7 +228,9 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                        'epoch test accuracy': test_accuracy})
 
             wandb.log(dataset_test_loss)
-            wandb.log(dataset_correct)
+
+            dataset_accuracy = {k: v/1e5 for k, v in dataset_correct.items()}
+            wandb.log(dataset_accuracy)
 
             # --------------------------------------------------------------------------#
             # update learning rate scheduler                                            #
