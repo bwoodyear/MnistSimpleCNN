@@ -21,10 +21,9 @@ import ipdb
 dirname = os.path.dirname(__file__)
 output_path = os.path.join(dirname, '..', 'logs')
 
-wandb.init(project="mnist-baseline-tests", entity="ucl-dark", dir=output_path)
-
 
 def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=None):
+
     # random number generator seed ------------------------------------------------#
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
@@ -47,57 +46,38 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     ])
 
     # data loader -----------------------------------------------------------------#
-
-    # # Test just regular dataset
-    # regular_dataset = MnistDataset(training=True, transform=transform, regular=True)
-    # regular_loader = torch.utils.data.DataLoader(regular_dataset, batch_size=120, shuffle=True)
-    # train_loader_dict = {'regular': regular_loader}
-    #
-    # regular_test_dataset = MnistDataset(training=False, transform=None, regular=True)
-    # regular_test_loader = torch.utils.data.DataLoader(regular_test_dataset, batch_size=100, shuffle=False)
-    # test_loader_dict = {'regular': regular_test_loader}
-
-    # # Test just fashion dataset
-    # fashion_dataset = MnistDataset(training=True, transform=transform, fashion=True)
-    # fashion_loader = torch.utils.data.DataLoader(fashion_dataset, batch_size=120, shuffle=True)
-    # train_loader_dict = {'fashion': fashion_loader}
-    #
-    # fashion_test_dataset = MnistDataset(training=False, transform=None, fashion=True)
-    # fashion_test_loader = torch.utils.data.DataLoader(fashion_test_dataset, batch_size=100, shuffle=False)
-    # test_loader_dict = {'fashion': fashion_test_loader}
-
     batch_size = 100
 
     if training_type in {'multi-task', 'multi-task_labels'}:
         train_dataset = MnistDataset(training=True, transform=transform,
-                                     regular=True, fashion=True)
+                                     digit=True, fashion=True)
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         train_loader_dict = {'combined': train_loader}
     elif training_type == 'continual':
-        regular_dataset = MnistDataset(training=True, transform=transform, regular=True)
+        digit_dataset = MnistDataset(training=True, transform=transform, digit=True)
         fashion_dataset = MnistDataset(training=True, transform=transform, fashion=True)
 
         # Create a loader for each of the datasets
-        regular_loader = torch.utils.data.DataLoader(regular_dataset, batch_size=batch_size, shuffle=True)
+        digit_loader = torch.utils.data.DataLoader(digit_dataset, batch_size=batch_size, shuffle=True)
         fashion_loader = torch.utils.data.DataLoader(fashion_dataset, batch_size=batch_size, shuffle=True)
 
         # Put the data loaders in the specified order
-        if continual_order == 'regular_first':
-            train_loader_dict = OrderedDict([('regular', regular_loader), ('fashion', fashion_loader)])
+        if continual_order == 'digit_first':
+            train_loader_dict = OrderedDict([('digit', digit_loader), ('fashion', fashion_loader)])
         elif continual_order == 'fashion_first':
-            train_loader_dict = OrderedDict([('fashion', fashion_loader), ('regular', regular_loader)])
+            train_loader_dict = OrderedDict([('fashion', fashion_loader), ('digit', digit_loader)])
         else:
             raise ValueError(f'Continual learning with this order: {continual_order} not recognised')
     else:
         raise NotImplementedError(f'This training type: {training_type} has not been implemented.')
 
-    regular_test_dataset = MnistDataset(training=False, transform=None, regular=True)
-    regular_test_loader = torch.utils.data.DataLoader(regular_test_dataset, batch_size=batch_size, shuffle=False)
+    digit_test_dataset = MnistDataset(training=False, transform=None, digit=True)
+    digit_test_loader = torch.utils.data.DataLoader(digit_test_dataset, batch_size=batch_size, shuffle=False)
 
     fashion_test_dataset = MnistDataset(training=False, transform=None, fashion=True)
     fashion_test_loader = torch.utils.data.DataLoader(fashion_test_dataset, batch_size=batch_size, shuffle=False)
 
-    test_loader_dict = {'regular': regular_test_loader, 'fashion': fashion_test_loader}
+    test_loader_dict = {'digit': digit_test_loader, 'fashion': fashion_test_loader}
 
     # model selection -------------------------------------------------------------#
 
@@ -113,6 +93,8 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=exp_lr_gamma)
 
+    # Setup wandb logging
+    wandb.init(project="mnist-baseline-tests", entity="ucl-dark", dir=output_path)
     wandb.config = {
         "learning_rate": learning_rate,
         "epochs": epochs,
@@ -145,7 +127,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                 data, target = data.to(device), target.to(device, dtype=torch.int64)
                 optimizer.zero_grad()
 
-                if training_type == 'multi-task_labels' and train_dataset_name == 'regular':
+                if training_type == 'multi-task_labels' and train_dataset_name == 'digit':
                     output = model(data, 0, device)
                 elif training_type == 'multi-task_labels' and train_dataset_name == 'fashion':
                     output = model(data, 1, device)
@@ -180,15 +162,15 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
             total_target = np.zeros(0)
 
             # Keep track of loss and correct predictions for each dataset
-            dataset_test_loss = {'regular': 0, 'fashion': 0}
-            dataset_test_correct = {'regular': 0, 'fashion': 0}
+            dataset_test_loss = {'digit': 0, 'fashion': 0}
+            dataset_test_correct = {'digit': 0, 'fashion': 0}
 
             with torch.no_grad():
                 for test_dataset_name, test_loader in test_loader_dict.items():
                     for data, target in test_loader:
                         data, target = data.to(device), target.to(device,  dtype=torch.int64)
 
-                        if training_type == 'multi-task_labels' and train_dataset_name == 'regular':
+                        if training_type == 'multi-task_labels' and train_dataset_name == 'digit':
                             output = model(data, 0, device)
                         elif training_type == 'multi-task_labels' and train_dataset_name == 'fashion':
                             output = model(data, 1, device)
@@ -242,12 +224,14 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--seed", default=0, type=int, nargs='*')
-    p.add_argument("--epochs", default=10, type=int)
+    p.add_argument("-s", "--seed", default=0, type=int, nargs='*', help='random seeds for torch')
+    p.add_argument("--epochs", default=10, type=int, help='number of epochs to train for')
     p.add_argument("--kernel_size", default=5, type=int)
-    p.add_argument("--training_type", required=True, type=str)
-    p.add_argument("--continual_order", default='', type=str)
-    p.add_argument("--label_level", default=1, type=int)
+    p.add_argument("--training_type", required=True, type=str, help='type of training for the datasets',
+                   choices=['multi-task', 'continual', 'multi-task_labels', 'continual_labels'])
+    p.add_argument("--continual_order", default='', type=str, help='dataset order for continual training',
+                   choices=['digit_first', 'fashion_first'])
+    p.add_argument("--label_level", default=1, type=int, help='which level to insert image labels at in the network')
     p.add_argument("-v", "--verbose", default=True, type=bool)
     args = p.parse_args()
 

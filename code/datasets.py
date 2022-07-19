@@ -30,35 +30,35 @@ def read_data_files(dataset_name, split):
 
 
 class MnistDataset(torch.utils.data.Dataset):
-    def __init__(self, training=True, transform=None, regular=False, fashion=False):
+    def __init__(self, training=True, transform=None, digit=False, fashion=False):
         """
         Create the class for MNIST datasets.
 
         :param training: bool, whether this is the training or test set
         :param transform: torchvision transforms, what transformations to apply to the images
-        :param regular: bool, whether to load the regular MNIST dataset
+        :param digit: bool, whether to load the digit MNIST dataset
         :param fashion: bool, whether to load the fashion MNIST dataset
         """
         split = 'train' if training else 'test'
         # If testing
-        if regular and fashion:
+        if digit and fashion:
             # Get the test images and labels for MNIST and FashionMNIST
-            x_regular, y_regular = read_data_files('MNIST', split)
+            x_digit, y_digit = read_data_files('MNIST', split)
             x_fashion, y_fashion = read_data_files('FashionMNIST', split)
 
             # Join both datasets together
-            xs = np.concatenate([x_regular, x_fashion], axis=0)
-            ys = np.concatenate([y_regular, y_fashion], axis=0)
+            xs = np.concatenate([x_digit, x_fashion], axis=0)
+            ys = np.concatenate([y_digit, y_fashion], axis=0)
 
             # Shuffle the image and label arrays, keep the same seed for now
             xs, ys = shuffle(xs, ys, random_state=0)
 
-        elif regular:
+        elif digit:
             xs, ys = read_data_files('MNIST', split)
         elif fashion:
             xs, ys = read_data_files('FashionMNIST', split)
         else:
-            raise ValueError('One of regular or fashion MNIST must be selected.')
+            raise ValueError('One of digit or fashion MNIST must be selected.')
 
         self.x_data = xs
         self.y_data = ys
