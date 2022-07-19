@@ -128,7 +128,6 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
     # global variables ------------------------------------------------------------#
     g_step = 0
-    # max_correct = 0
 
     # training and evaluation loop ------------------------------------------------#
     for train_dataset_name, train_loader in train_loader_dict.items():
@@ -181,8 +180,8 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
             total_target = np.zeros(0)
 
             # Keep track of loss and correct predictions for each dataset
-            dataset_test_loss = {'regular dataset test loss': 0, 'fashion dataset test loss': 0}
-            dataset_correct = {'regular dataset test correct': 0, 'fashion dataset test correct': 0}
+            dataset_test_loss = {'regular': 0, 'fashion': 0}
+            dataset_test_correct = {'regular': 0, 'fashion': 0}
 
             with torch.no_grad():
                 for test_dataset_name, test_loader in test_loader_dict.items():
@@ -202,7 +201,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                         #     ipdb.set_trace()
 
                         total_test_loss += loss
-                        dataset_test_loss[f'{test_dataset_name} dataset test loss'] += loss
+                        dataset_test_loss[test_dataset_name] += loss
 
                         pred = output.argmax(dim=1, keepdim=True)
                         total_pred = np.append(total_pred, pred.cpu().numpy())
@@ -210,27 +209,30 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                         
                         batch_correct = pred.eq(target.view_as(pred)).sum().item()
                         total_correct += batch_correct
-                        dataset_correct[f'{test_dataset_name} dataset test correct'] += batch_correct
+                        dataset_test_correct[test_dataset_name] += batch_correct
 
             ema.resume(model)
 
             # --------------------------------------------------------------------------#
             # output                                                                    #
             # --------------------------------------------------------------------------#
-            # test_points = 2e4
-            test_points = sum(len(dl.dataset) for dl in test_loader_dict.values())
-            total_test_loss /= test_points
-            test_accuracy = 100 * total_correct / test_points
+            # Find the number of test points for each dataset
+            test_points = {k: len(dl.dataset) for k, dl in test_loader_dict.items()}
+            total_test_points = sum(test_points.values())
+
+            total_test_loss /= total_test_points
+            test_accuracy = 100 * total_correct / total_test_points
 
             logging.info(f'epoch {epoch+1} test accuracy: {test_accuracy}')
 
             wandb.log({'epoch test loss': total_test_loss,
                        'epoch test accuracy': test_accuracy})
 
-            wandb.log(dataset_test_loss)
+            wandb.log({f'{k} dataset test loss': v for k, v in dataset_test_loss.items()})
 
-            dataset_accuracy = {k: v/1e5 for k, v in dataset_correct.items()}
-            wandb.log(dataset_accuracy)
+            dataset_test_accuracy = {f'{k} dataset test accuracy': 100*v/test_points[k]
+                                     for k, v in dataset_test_correct.items()}
+            wandb.log(dataset_test_accuracy)
 
             # --------------------------------------------------------------------------#
             # update learning rate scheduler                                            #
