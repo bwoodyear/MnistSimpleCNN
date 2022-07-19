@@ -19,6 +19,9 @@ from models.base_model import Model
 import ipdb
 
 dirname = os.path.dirname(__file__)
+output_path = os.path.join(dirname, '..', 'logs')
+
+wandb.init(project="mnist-baseline-tests", entity="ucl-dark", dir=output_path)
 
 
 def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=None):
@@ -63,18 +66,20 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     # fashion_test_loader = torch.utils.data.DataLoader(fashion_test_dataset, batch_size=100, shuffle=False)
     # test_loader_dict = {'fashion': fashion_test_loader}
 
+    batch_size = 100
+
     if training_type in {'multi-task', 'multi-task_labels'}:
         train_dataset = MnistDataset(training=True, transform=transform,
                                      regular=True, fashion=True)
-        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=120, shuffle=True)
+        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         train_loader_dict = {'combined': train_loader}
     elif training_type == 'continual':
         regular_dataset = MnistDataset(training=True, transform=transform, regular=True)
         fashion_dataset = MnistDataset(training=True, transform=transform, fashion=True)
 
         # Create a loader for each of the datasets
-        regular_loader = torch.utils.data.DataLoader(regular_dataset, batch_size=120, shuffle=True)
-        fashion_loader = torch.utils.data.DataLoader(fashion_dataset, batch_size=120, shuffle=True)
+        regular_loader = torch.utils.data.DataLoader(regular_dataset, batch_size=batch_size, shuffle=True)
+        fashion_loader = torch.utils.data.DataLoader(fashion_dataset, batch_size=batch_size, shuffle=True)
 
         # Put the data loaders in the specified order
         if continual_order == 'regular_first':
@@ -87,33 +92,39 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
         raise NotImplementedError(f'This training type: {training_type} has not been implemented.')
 
     regular_test_dataset = MnistDataset(training=False, transform=None, regular=True)
-    regular_test_loader = torch.utils.data.DataLoader(regular_test_dataset, batch_size=100, shuffle=False)
+    regular_test_loader = torch.utils.data.DataLoader(regular_test_dataset, batch_size=batch_size, shuffle=False)
 
     fashion_test_dataset = MnistDataset(training=False, transform=None, fashion=True)
-    fashion_test_loader = torch.utils.data.DataLoader(fashion_test_dataset, batch_size=100, shuffle=False)
+    fashion_test_loader = torch.utils.data.DataLoader(fashion_test_dataset, batch_size=batch_size, shuffle=False)
 
     test_loader_dict = {'regular': regular_test_loader, 'fashion': fashion_test_loader}
-
-    # ipdb.set_trace()
 
     # model selection -------------------------------------------------------------#
 
     # model = Model(kernel_size).to(device)
     model = ModelM5().to(device)
-
-    output_path = os.path.join(dirname, '..', 'logs')
-    wandb.init(project='mnist-baselines',
-               name=f'simple-cnn-{kernel_size}-{training_type}',
-               dir=output_path)
-
-    wandb.watch(model, log_freq=100)
-
     summary(model, (1, 28, 28))
 
     # hyperparameter selection ----------------------------------------------------#
+    learning_rate = 1e-4
+    exp_lr_gamma = 0.60
+
     ema = EMA(model, decay=0.999)
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
-    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.60)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=exp_lr_gamma)
+
+    wandb.config = {
+        "learning_rate": learning_rate,
+        "epochs": epochs,
+        "seed": seed,
+        "batch_size": batch_size,
+        "training_type": training_type
+    }
+
+    if continual_order:
+        wandb.config["continual_order"] = continual_order
+
+    wandb.watch(model, log_freq=100)
 
     # global variables ------------------------------------------------------------#
     g_step = 0
@@ -121,11 +132,10 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
     # training and evaluation loop ------------------------------------------------#
     for train_dataset_name, train_loader in train_loader_dict.items():
-        # optimizer = optim.Adam(model.parameters(), lr=0.001)
-        # lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.98)
-
         for epoch in range(epochs):
             logging.info(f'starting epoch {epoch+1} of {train_dataset_name} MNIST')
+            logging.info(f'current learning rate: {lr_scheduler.get_lr()}')
+
             # --------------------------------------------------------------------------#
             # train process                                                             #
             # --------------------------------------------------------------------------#
@@ -174,9 +184,6 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
             dataset_test_loss = {'regular dataset test loss': 0, 'fashion dataset test loss': 0}
             dataset_correct = {'regular dataset test correct': 0, 'fashion dataset test correct': 0}
 
-            # dataset_test_loss = {'fashion dataset test loss': 0}
-            # dataset_correct = {'fashion dataset test correct': 0}
-
             with torch.no_grad():
                 for test_dataset_name, test_loader in test_loader_dict.items():
                     for data, target in test_loader:
@@ -205,9 +212,6 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                         total_correct += batch_correct
                         dataset_correct[f'{test_dataset_name} dataset test correct'] += batch_correct
 
-                    # if max_correct < total_correct:
-                    #     max_correct = total_correct
-                    #     logging.info(f"Best accuracy! correct images: {total_correct}")
             ema.resume(model)
 
             # --------------------------------------------------------------------------#
@@ -238,7 +242,7 @@ if __name__ == "__main__":
     p.add_argument("--epochs", default=10, type=int)
     p.add_argument("--kernel_size", default=5, type=int)
     p.add_argument("--training_type", required=True, type=str)
-    p.add_argument("--continual_order", default='regular_first', type=str)
+    p.add_argument("--continual_order", default='', type=str)
     p.add_argument("--label_level", default=1, type=int)
     p.add_argument("--verbose", default=True, type=bool)
     args = p.parse_args()
