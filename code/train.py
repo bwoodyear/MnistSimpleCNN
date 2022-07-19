@@ -1,22 +1,20 @@
 import os
 import argparse
-import logging
-from collections import OrderedDict
-import numpy as np
-import torchvision.transforms
 import wandb
+import logging
+import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import transforms
 from torchsummary import summary
-from ema import EMA
 from datasets import MnistDataset
-from transforms import RandomRotation
+from ema import EMA
 from models.modelM3 import ModelM3
 from models.modelM5 import ModelM5
 from models.modelM7 import ModelM7
 from models.base_model import Model
+from collections import OrderedDict
 import ipdb
 
 dirname = os.path.dirname(__file__)
@@ -42,8 +40,8 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
     # data augmentation methods ---------------------------------------------------#
     transform = transforms.Compose([
-        transforms.RandomRotation(20, interpolation=torchvision.transforms.InterpolationMode.NEAREST),
-        transforms.RandomAffine(0, translate=(0.2, 0.2), interpolation=torchvision.transforms.InterpolationMode.NEAREST)
+        transforms.RandomRotation(20, interpolation=transforms.InterpolationMode.NEAREST),
+        transforms.RandomAffine(0, translate=(0.2, 0.2), interpolation=transforms.InterpolationMode.NEAREST)
     ])
 
     # data loader -----------------------------------------------------------------#
