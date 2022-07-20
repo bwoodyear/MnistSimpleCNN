@@ -88,7 +88,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     learning_rate = 1e-3
     exp_lr_gamma = 0.95
 
-    ema = EMA(model, decay=0.999)
+    # ema = EMA(model, decay=0.999)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=exp_lr_gamma)
 
@@ -140,8 +140,8 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
                 loss.backward()
                 optimizer.step()
-                g_step += 1
-                ema(model, g_step)
+                # g_step += 1
+                # ema(model, g_step)
 
             train_loss /= len(train_loader.dataset)
             train_accuracy = 100 * train_corr / len(train_loader.dataset)
@@ -153,7 +153,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
             # test process                                                              #
             # --------------------------------------------------------------------------#
             model.eval()
-            ema.assign(model)
+            # ema.assign(model)
 
             total_test_loss = 0
             total_correct = 0
@@ -192,7 +192,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                         total_correct += batch_correct
                         dataset_test_correct[test_dataset_name] += batch_correct
 
-            ema.resume(model)
+            # ema.resume(model)
 
             # --------------------------------------------------------------------------#
             # output                                                                    #
