@@ -1,3 +1,4 @@
+import logging
 import torch
 import torch.nn as nn
 import numpy as np
@@ -80,8 +81,7 @@ class Model(nn.Module):
         for n, l in enumerate(self.net):
             if n+1 == self.label_layer:
                 label_tensor = torch.full(x.shape[:3], label_value).to(device)
-                print(x.shape)
+                logging.info(f'Adding label tensor of shape: {label_tensor.shape}')
                 x = torch.cat((x, label_tensor), dim=-1)
-                print(x.shape)
             x = l(x)
         return nn.functional.log_softmax(x, dim=1)
