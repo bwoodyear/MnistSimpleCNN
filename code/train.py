@@ -9,9 +9,9 @@ import torch.optim as optim
 from torchvision import transforms
 from torchsummary import summary
 from datasets import MnistDataset
-from models.modelM3 import ModelM3
-from models.modelM5 import ModelM5
-from models.modelM7 import ModelM7
+# from models.modelM3 import ModelM3
+# from models.modelM5 import ModelM5
+# from models.modelM7 import ModelM7
 from models.base_model import Model
 from collections import OrderedDict
 import ipdb
@@ -21,7 +21,7 @@ output_path = os.path.join(dirname, '..', 'logs')
 
 
 def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, continual_order=None,
-        norm=None, reg_lambda=None):
+        norm=None, reg_lambda=None, label_level=None):
 
     # random number generator seed ------------------------------------------------#
     torch.backends.cudnn.deterministic = True
@@ -81,8 +81,11 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
     # model selection -------------------------------------------------------------#
 
     # model = Model(kernel_size=5).to(device)
-    model = ModelM5().to(device)
-    summary(model, (1, 28, 28))
+    if 'labels' in training_type:
+        model = Model(label_level=label_level).to(device)
+    else:
+        model = Model().to(device)
+    # summary(model, (1, 28, 28))
 
     # hyperparameter selection ----------------------------------------------------#
     exp_lr_gamma = 0.95
@@ -123,14 +126,17 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
             model.train()
             train_loss = 0
             train_corr = 0
-            for batch_idx, (data, target) in enumerate(train_loader):
-                data, target = data.to(device), target.to(device, dtype=torch.int64)
+            for batch_idx, (data, target_and_label) in enumerate(train_loader):
+
+                data = data.to(device)
+                # Split the targets and labels
+                target = torch.flatten(target_and_label[:, 0]).to(device, dtype=torch.int64)
+                labels = torch.flatten(target_and_label[:, 1]).to(device, dtype=torch.int64)
+
                 optimizer.zero_grad()
 
-                if training_type == 'multi-task_labels' and train_dataset_name == 'digit':
-                    output = model(data, 0, device)
-                elif training_type == 'multi-task_labels' and train_dataset_name == 'fashion':
-                    output = model(data, 1, device)
+                if 'labels' in training_type:
+                    output = model(data, labels)
                 else:
                     output = model(data)
 
@@ -169,13 +175,15 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
 
             with torch.no_grad():
                 for test_dataset_name, test_loader in test_loader_dict.items():
-                    for data, target in test_loader:
-                        data, target = data.to(device), target.to(device,  dtype=torch.int64)
+                    for data, target_and_label in test_loader:
 
-                        if training_type == 'multi-task_labels' and train_dataset_name == 'digit':
-                            output = model(data, 0, device)
-                        elif training_type == 'multi-task_labels' and train_dataset_name == 'fashion':
-                            output = model(data, 1, device)
+                        data = data.to(device)
+                        # Split the targets and labels
+                        target = torch.flatten(target_and_label[:, 0]).to(device, dtype=torch.int64)
+                        labels = torch.flatten(target_and_label[:, 1]).to(device, dtype=torch.int64)
+
+                        if 'labels' in training_type:
+                            output = model(data, labels)
                         else:
                             output = model(data)
 
@@ -221,7 +229,7 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("-s", "--seeds", type=int, nargs='*', help='random seeds for torch')
+    p.add_argument("-s", "--seeds", type=int, required=True, nargs='*', help='random seeds for torch')
     p.add_argument("--lr", default=1e-3, type=int, nargs='*', help='random seeds for torch')
     p.add_argument("--epochs", default=10, type=int, help='number of epochs to train for')
     p.add_argument("--kernel_size", default=5, type=int, help='size of convolution kernels to use')
@@ -229,7 +237,7 @@ if __name__ == "__main__":
                    choices=['multi-task', 'continual', 'multi-task_labels', 'continual_labels'])
     p.add_argument("--continual_order", default='', type=str, help='dataset order for continual training',
                    choices=['digit_first', 'fashion_first'])
-    p.add_argument("--label_level", default=1, type=int, help='which level to insert image labels at in the network')
+    p.add_argument("--label_level", type=int, help='which number layer to insert dataset labels at in the network')
     p.add_argument("--norm", type=str, help='type of norm for regularisation',
                    choices=['l1', 'l2'])
     p.add_argument("--reg_lambda", type=float, default=1e-3, help='lambda for the regularization term')
@@ -248,4 +256,5 @@ if __name__ == "__main__":
             lr=args.lr,
             kernel_size=args.kernel_size,
             training_type=args.training_type,
-            continual_order=args.continual_order)
+            continual_order=args.continual_order,
+            label_level=args.label_level)

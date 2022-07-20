@@ -32,10 +32,10 @@ def pairwise(iterable):
 
 
 class Model(nn.Module):
-    def __init__(self, kernel_size: int = 3, label_layer: int = None):
+    def __init__(self, kernel_size: int = 3, label_level: int = None):
         super(Model, self).__init__()
 
-        self.label_layer = label_layer
+        self.label_level = label_level
         self.net = self.setup_net(kernel_size)
 
     def setup_net(self, kernel_size: int):
@@ -55,18 +55,23 @@ class Model(nn.Module):
         else:
             raise NotImplementedError(f'This kernel size: {kernel_size} is not implemented.')
 
-        for n, in_out in enumerate(pairwise(layer_params)):
-            i, o = in_out
+        # Ensure that labels are being added at a valid level
+        if self.label_level:
+            assert self.label_level in set(range(1, len(layer_params)))
+
+        for n, (i, o) in enumerate(pairwise(layer_params)):
 
             # Will have one additional input layer if labels are being included
-            if n+1 == self.label_layer:
+            if n+1 == self.label_level:
                 i += 1
+
+            if n:
+                # Follow each conv after first with a batchnorm and a relu
+                layers.append(nn.BatchNorm2d(i))
+                layers.append(nn.ReLU())
 
             # Add each conv layer with the given input and output size
             layers.append(nn.Conv2d(i, o, kernel_size, bias=False))
-            # Follow each conv with a batchnorm and a relu
-            layers.append(nn.BatchNorm2d(o))
-            layers.append(nn.ReLU())
 
         # Add the final linear layer
         layers.append(nn.Flatten())
@@ -75,13 +80,13 @@ class Model(nn.Module):
 
         return layers
 
-    def forward(self, x, label_value: int = None, device: str = None):
+    def forward(self, x, labels: torch.tensor = None):
         x = (x - 0.5) * 2.0
         # Iterate through the layers, injecting labels if specified
         for n, l in enumerate(self.net):
-            if n+1 == self.label_layer:
-                label_tensor = torch.full(x.shape[:3], label_value).to(device)
-                logging.info(f'Adding label tensor of shape: {label_tensor.shape}')
-                x = torch.cat((x, label_tensor), dim=-1)
+            # If at the level where labels are being injected project these to the correct dimension then insert
+            if n+1 == self.label_level:
+                label_tensor = labels[:, None, None].expand(-1, x.shape[-2], x.shape[-1])
+                x = torch.cat((x, label_tensor.unsqueeze(1)), dim=1)
             x = l(x)
         return nn.functional.log_softmax(x, dim=1)
