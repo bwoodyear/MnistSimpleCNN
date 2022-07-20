@@ -80,8 +80,8 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
 
     # model selection -------------------------------------------------------------#
 
-    model = Model(kernel_size=5).to(device)
-    # model = ModelM5().to(device)
+    # model = Model(kernel_size=5).to(device)
+    model = ModelM5().to(device)
     summary(model, (1, 28, 28))
 
     # hyperparameter selection ----------------------------------------------------#
@@ -221,7 +221,7 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("-s", "--seeds", default=0, type=int, nargs='*', help='random seeds for torch')
+    p.add_argument("-s", "--seeds", type=int, nargs='*', help='random seeds for torch')
     p.add_argument("--lr", default=1e-3, type=int, nargs='*', help='random seeds for torch')
     p.add_argument("--epochs", default=10, type=int, help='number of epochs to train for')
     p.add_argument("--kernel_size", default=5, type=int, help='size of convolution kernels to use')
