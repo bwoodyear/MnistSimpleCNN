@@ -75,6 +75,7 @@ class Model(nn.Module):
         return layers
 
     def forward(self, x, label_value: int = None, device: str = None):
+        x = (x - 0.5) * 2.0
         # Iterate through the layers, injecting labels if specified
         for n, l in enumerate(self.net):
             if n+1 == self.label_layer:

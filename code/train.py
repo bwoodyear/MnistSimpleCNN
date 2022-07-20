@@ -9,7 +9,6 @@ import torch.optim as optim
 from torchvision import transforms
 from torchsummary import summary
 from datasets import MnistDataset
-from ema import EMA
 from models.modelM3 import ModelM3
 from models.modelM5 import ModelM5
 from models.modelM7 import ModelM7
@@ -81,8 +80,8 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
 
     # model selection -------------------------------------------------------------#
 
-    # model = Model(kernel_size).to(device)
-    model = ModelM5().to(device)
+    model = Model(kernel_size=5).to(device)
+    # model = ModelM5().to(device)
     summary(model, (1, 28, 28))
 
     # hyperparameter selection ----------------------------------------------------#
@@ -136,11 +135,10 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
                     output = model(data)
 
                 if norm == 'l1':
-                    pass
+                    l1_loss = sum(torch.sum(torch.abs(param)) for param in model.parameters())
+                    loss = F.nll_loss(output, target) + reg_lambda * l1_loss
                 else:
-                    pass
-
-                loss = F.nll_loss(output, target)
+                    loss = F.nll_loss(output, target)
 
                 train_pred = output.argmax(dim=1, keepdim=True)
                 train_corr += train_pred.eq(target.view_as(train_pred)).sum().item()
@@ -148,8 +146,6 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
 
                 loss.backward()
                 optimizer.step()
-                # g_step += 1
-                # ema(model, g_step)
 
             train_loss /= len(train_loader.dataset)
             train_accuracy = 100 * train_corr / len(train_loader.dataset)
@@ -161,7 +157,6 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
             # test process                                                              #
             # --------------------------------------------------------------------------#
             model.eval()
-            # ema.assign(model)
 
             total_test_loss = 0
             total_correct = 0
@@ -186,9 +181,6 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
 
                         loss = F.nll_loss(output, target, reduction='sum').item()
 
-                        # if np.isnan(loss):
-                        #     ipdb.set_trace()
-
                         total_test_loss += loss
                         dataset_test_loss[test_dataset_name] += loss
 
@@ -199,8 +191,6 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
                         batch_correct = pred.eq(target.view_as(pred)).sum().item()
                         total_correct += batch_correct
                         dataset_test_correct[test_dataset_name] += batch_correct
-
-            # ema.resume(model)
 
             # --------------------------------------------------------------------------#
             # output                                                                    #
