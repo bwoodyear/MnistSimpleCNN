@@ -21,7 +21,8 @@ dirname = os.path.dirname(__file__)
 output_path = os.path.join(dirname, '..', 'logs')
 
 
-def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=None):
+def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=None,
+        norm=None, reg_lambda=None):
 
     # random number generator seed ------------------------------------------------#
     torch.backends.cudnn.deterministic = True
@@ -88,27 +89,29 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     learning_rate = 1e-3
     exp_lr_gamma = 0.95
 
-    # ema = EMA(model, decay=0.999)
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    if norm == 'l2':
+        # L2 is the default weight decay for Adam
+        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=reg_lambda)
+    else:
+        # Otherwise use standard Adam
+        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=exp_lr_gamma)
 
     # Setup wandb logging
-    wandb.init(project="mnist-baseline-tests", entity="ucl-dark", dir=output_path, reinit=True)
-    wandb.config = {
-        "learning_rate": learning_rate,
-        "epochs": epochs,
-        "seed": seed,
-        "batch_size": batch_size,
-        "training_type": training_type
-    }
+    wandb.init(project="mnist-baseline-tests", entity="ucl-dark", dir=output_path, reinit=True,
+               config={
+                   "learning_rate": learning_rate,
+                   "epochs": epochs,
+                   "seed": seed,
+                   "batch_size": batch_size,
+                   "training_type": training_type
+               })
 
     if continual_order:
-        wandb.config["continual_order"] = continual_order
+        wandb.config.update({"continual_order": continual_order})
 
     wandb.watch(model, log_freq=100)
-
-    # global variables ------------------------------------------------------------#
-    g_step = 0
 
     # training and evaluation loop ------------------------------------------------#
     for train_dataset_name, train_loader in train_loader_dict.items():
@@ -132,6 +135,13 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                     output = model(data, 1, device)
                 else:
                     output = model(data)
+
+                if norm == 'l1':
+                    pass
+                else:
+                    pass
+
+
                 loss = F.nll_loss(output, target)
 
                 train_pred = output.argmax(dim=1, keepdim=True)
@@ -187,7 +197,7 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                         pred = output.argmax(dim=1, keepdim=True)
                         total_pred = np.append(total_pred, pred.cpu().numpy())
                         total_target = np.append(total_target, target.cpu().numpy())
-                        
+
                         batch_correct = pred.eq(target.view_as(pred)).sum().item()
                         total_correct += batch_correct
                         dataset_test_correct[test_dataset_name] += batch_correct
@@ -231,6 +241,9 @@ if __name__ == "__main__":
     p.add_argument("--continual_order", default='', type=str, help='dataset order for continual training',
                    choices=['digit_first', 'fashion_first'])
     p.add_argument("--label_level", default=1, type=int, help='which level to insert image labels at in the network')
+    p.add_argument("--norm", type=str, help='type of norm for regularisation',
+                   choices=['l1', 'l2'])
+    p.add_argument("--reg_lambda", type=float, default=1e-3, help='lambda for the regularization term')
     p.add_argument("-v", "--verbose", default=True, type=bool)
     args = p.parse_args()
 

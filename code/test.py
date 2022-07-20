@@ -8,8 +8,8 @@ from models.modelM3 import ModelM3
 from models.modelM5 import ModelM5
 from models.modelM7 import ModelM7
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 def run(p_seed=0, p_kernel_size=5, p_logdir="temp"):
@@ -17,7 +17,7 @@ def run(p_seed=0, p_kernel_size=5, p_logdir="temp"):
     # enable GPU usage ------------------------------------------------------------#
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
-    if use_cuda == False:
+    if not use_cuda:
         print("WARNING: CPU will be used for training.")
         exit(0)
 
@@ -50,8 +50,7 @@ def run(p_seed=0, p_kernel_size=5, p_logdir="temp"):
             correct += pred.eq(target.view_as(pred)).sum().item()
             wrong_images.extend(np.nonzero(~pred.eq(target.view_as(pred)).cpu().numpy())[0]+(100*batch_idx))
 
-    np.savetxt("../logs/%s/wrong%03d.txt"%(p_logdir,p_seed), wrong_images, fmt="%d")
-    #print(len(wrong_images), wrong_images)
+    # np.savetxt("../logs/%s/wrong%03d.txt"%(p_logdir,p_seed), wrong_images, fmt="%d")
 
 
 if __name__ == "__main__":
@@ -62,9 +61,9 @@ if __name__ == "__main__":
     p.add_argument("--kernel_size", default=5, type=int)
     args = p.parse_args()
     for i in range(args.trials):
-        run(p_seed = args.seed + i,
-            p_kernel_size = args.kernel_size,
-            p_logdir = args.logdir)
+        run(p_seed=args.seed + i,
+            p_kernel_size=args.kernel_size,
+            p_logdir=args.logdir)
 
 
 

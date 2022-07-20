@@ -12,22 +12,22 @@ def pairwise(iterable):
     return zip(a, b)
 
 
-def init(module, weight_init, bias_init, gain=1):
-    weight_init(module.weight.data, gain=gain)
-    bias_init(module.bias.data)
-    return module
-
-
-init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                       constant_(x, 0))
-
-
-init_relu_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                            constant_(x, 0), nn.init.calculate_gain('relu'))
-
-
-init_tanh_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                            constant_(x, 0), np.sqrt(2))
+# def init(module, weight_init, bias_init, gain=1):
+#     weight_init(module.weight.data, gain=gain)
+#     bias_init(module.bias.data)
+#     return module
+#
+#
+# init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+#                        constant_(x, 0))
+#
+#
+# init_relu_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+#                             constant_(x, 0), nn.init.calculate_gain('relu'))
+#
+#
+# init_tanh_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+#                             constant_(x, 0), np.sqrt(2))
 
 
 class Model(nn.Module):
