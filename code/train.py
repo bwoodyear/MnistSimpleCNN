@@ -21,7 +21,7 @@ dirname = os.path.dirname(__file__)
 output_path = os.path.join(dirname, '..', 'logs')
 
 
-def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=None,
+def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, continual_order=None,
         norm=None, reg_lambda=None):
 
     # random number generator seed ------------------------------------------------#
@@ -86,22 +86,21 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
     summary(model, (1, 28, 28))
 
     # hyperparameter selection ----------------------------------------------------#
-    learning_rate = 1e-3
     exp_lr_gamma = 0.95
 
     if norm == 'l2':
         # L2 is the default weight decay for Adam
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=reg_lambda)
+        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=reg_lambda)
     else:
         # Otherwise use standard Adam
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+        optimizer = optim.Adam(model.parameters(), lr=lr)
 
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=exp_lr_gamma)
 
     # Setup wandb logging
     wandb.init(project="mnist-baseline-tests", entity="ucl-dark", dir=output_path, reinit=True,
                config={
-                   "learning_rate": learning_rate,
+                   "learning_rate": lr,
                    "epochs": epochs,
                    "seed": seed,
                    "batch_size": batch_size,
@@ -140,7 +139,6 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
                     pass
                 else:
                     pass
-
 
                 loss = F.nll_loss(output, target)
 
@@ -233,10 +231,11 @@ def run(seed=0, epochs=150, kernel_size=5, training_type=None, continual_order=N
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("-s", "--seed", default=0, type=int, nargs='*', help='random seeds for torch')
+    p.add_argument("-s", "--seeds", default=0, type=int, nargs='*', help='random seeds for torch')
+    p.add_argument("--lr", default=1e-3, type=int, nargs='*', help='random seeds for torch')
     p.add_argument("--epochs", default=10, type=int, help='number of epochs to train for')
-    p.add_argument("--kernel_size", default=5, type=int)
-    p.add_argument("--training_type", required=True, type=str, help='type of training for the datasets',
+    p.add_argument("--kernel_size", default=5, type=int, help='size of convolution kernels to use')
+    p.add_argument("-t", "--training_type", required=True, type=str, help='type of training for the datasets',
                    choices=['multi-task', 'continual', 'multi-task_labels', 'continual_labels'])
     p.add_argument("--continual_order", default='', type=str, help='dataset order for continual training',
                    choices=['digit_first', 'fashion_first'])
@@ -244,7 +243,7 @@ if __name__ == "__main__":
     p.add_argument("--norm", type=str, help='type of norm for regularisation',
                    choices=['l1', 'l2'])
     p.add_argument("--reg_lambda", type=float, default=1e-3, help='lambda for the regularization term')
-    p.add_argument("-v", "--verbose", default=True, type=bool)
+    p.add_argument("-v", "--verbose", action='store_true')
     args = p.parse_args()
 
     if args.verbose:
@@ -252,10 +251,11 @@ if __name__ == "__main__":
     else:
         logging.disable(logging.CRITICAL)
 
-    for s in args.seed:
+    for s in args.seeds:
         logging.info(f'\n\nStaring run with seed {s}\n')
         run(seed=s,
             epochs=args.epochs,
+            lr=args.lr,
             kernel_size=args.kernel_size,
             training_type=args.training_type,
             continual_order=args.continual_order)
