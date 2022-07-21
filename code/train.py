@@ -108,11 +108,17 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
                    "epochs": epochs,
                    "seed": seed,
                    "batch_size": batch_size,
-                   "training_type": training_type
+                   "training_type": training_type,
+                   "kernel_size": kernel_size,
+                   "norm": norm,
                })
 
     if continual_order:
         wandb.config.update({"continual_order": continual_order})
+    if 'labels' in training_type:
+        wandb.config.update({"label_level": label_level})
+    if norm:
+        wandb.config.update({"reg_lambda": reg_lambda})
 
     wandb.watch(model, log_freq=100)
 
@@ -232,14 +238,14 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("-s", "--seeds", type=int, required=True, nargs='*', help='random seeds for torch')
-    p.add_argument("--lr", default=1e-3, type=int, nargs='*', help='random seeds for torch')
-    p.add_argument("--epochs", default=10, type=int, help='number of epochs to train for')
-    p.add_argument("--kernel_size", default=5, type=int, help='size of convolution kernels to use')
+    p.add_argument("--lr", default=1e-3, type=float, nargs='*', help='random seeds for torch')
+    p.add_argument("-e", "--epochs", default=10, type=int, help='number of epochs to train for')
+    p.add_argument("-k", "--kernel_size", default=5, type=int, help='size of convolution kernels to use')
     p.add_argument("-t", "--training_type", required=True, type=str, help='type of training for the datasets',
                    choices=['multi-task', 'continual', 'multi-task_labels', 'continual_labels'])
     p.add_argument("--continual_order", default='', type=str, help='dataset order for continual training',
                    choices=['digit_first', 'fashion_first'])
-    p.add_argument("--label_level", type=int, help='which number layer to insert dataset labels at in the network')
+    p.add_argument("-ll", "--label_level", type=int, help='which number layer to insert dataset labels at in the network')
     p.add_argument("--norm", type=str, help='type of norm for regularisation',
                    choices=['l1', 'l2'])
     p.add_argument("--reg_lambda", type=float, default=1e-3, help='lambda for the regularization term')
