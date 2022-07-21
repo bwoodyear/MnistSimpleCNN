@@ -245,7 +245,8 @@ if __name__ == "__main__":
                    choices=['multi-task', 'continual', 'multi-task_labels', 'continual_labels'])
     p.add_argument("--continual_order", default='', type=str, help='dataset order for continual training',
                    choices=['digit_first', 'fashion_first'])
-    p.add_argument("-ll", "--label_level", type=int, help='which number layer to insert dataset labels at in the network')
+    p.add_argument("-ll", "--label_level", type=int, help='which number layer to insert dataset labels at in the '
+                                                          'network')
     p.add_argument("--norm", type=str, help='type of norm for regularisation',
                    choices=['l1', 'l2'])
     p.add_argument("--reg_lambda", type=float, default=1e-3, help='lambda for the regularization term')
