@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import transforms
-from torchsummary import summary
+from torchinfo import summary
 from datasets import MnistDataset
 # from models.modelM3 import ModelM3
 # from models.modelM5 import ModelM5
@@ -79,13 +79,15 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
     test_loader_dict = {'digit': digit_test_loader, 'fashion': fashion_test_loader}
 
     # model selection -------------------------------------------------------------#
-
-    # model = Model(kernel_size=5).to(device)
     if 'labels' in training_type:
-        model = Model(label_level=label_level).to(device)
+        model = Model(kernel_size=kernel_size, label_level=label_level).to(device)
     else:
         model = Model().to(device)
-    # summary(model, (1, 28, 28))
+
+    # To get an overview of the model size and memory requirements feed dummy values into summary
+    dummy_data = torch.rand((batch_size, 1, 28, 28))
+    dummy_labels = torch.randint(0, 2, (batch_size,))
+    summary(model, input_data=[dummy_data, dummy_labels])
 
     # hyperparameter selection ----------------------------------------------------#
     exp_lr_gamma = 0.95
