@@ -9,9 +9,6 @@ import torch.optim as optim
 from torchvision import transforms
 from torchinfo import summary
 from datasets import MnistDataset
-# from models.modelM3 import ModelM3
-# from models.modelM5 import ModelM5
-# from models.modelM7 import ModelM7
 from models.base_model import Model
 from collections import OrderedDict
 import ipdb
@@ -100,25 +97,6 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
         optimizer = optim.Adam(model.parameters(), lr=lr)
 
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=exp_lr_gamma)
-
-    # Setup wandb logging
-    wandb.init(project="mnist-baseline-tests", entity="ucl-dark", dir=output_path, reinit=True,
-               config={
-                   "learning_rate": lr,
-                   "epochs": epochs,
-                   "seed": seed,
-                   "batch_size": batch_size,
-                   "training_type": training_type,
-                   "kernel_size": kernel_size,
-                   "norm": norm,
-               })
-
-    if continual_order:
-        wandb.config.update({"continual_order": continual_order})
-    if 'labels' in training_type:
-        wandb.config.update({"label_level": label_level})
-    if norm:
-        wandb.config.update({"reg_lambda": reg_lambda})
 
     wandb.watch(model, log_freq=100)
 
@@ -237,13 +215,14 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("-s", "--seeds", type=int, required=True, nargs='*', help='random seeds for torch')
-    p.add_argument("--lr", default=1e-3, type=float, nargs='*', help='random seeds for torch')
+    p.add_argument("-s", "--seed", type=int, default=0, help='random seed for torch')
+    p.add_argument("--lr", default=1e-3, type=float, help='initial learning rate')
     p.add_argument("-e", "--epochs", default=10, type=int, help='number of epochs to train for')
-    p.add_argument("-k", "--kernel_size", default=5, type=int, help='size of convolution kernels to use')
+    p.add_argument("-k", "--kernel_size", default=5, type=int, help='size of convolution kernels to use',
+                   choices=[3, 5, 7])
     p.add_argument("-t", "--training_type", required=True, type=str, help='type of training for the datasets',
                    choices=['multi-task', 'continual', 'multi-task_labels', 'continual_labels'])
-    p.add_argument("--continual_order", default='', type=str, help='dataset order for continual training',
+    p.add_argument("--continual_order", type=str, help='dataset order for continual training',
                    choices=['digit_first', 'fashion_first'])
     p.add_argument("-ll", "--label_level", type=int, help='which number layer to insert dataset labels at in the '
                                                           'network')
@@ -258,12 +237,16 @@ if __name__ == "__main__":
     else:
         logging.disable(logging.CRITICAL)
 
-    for s in args.seeds:
-        logging.info(f'\n\nStaring run with seed {s}\n')
-        run(seed=s,
-            epochs=args.epochs,
-            lr=args.lr,
-            kernel_size=args.kernel_size,
-            training_type=args.training_type,
-            continual_order=args.continual_order,
-            label_level=args.label_level)
+    # Setup wandb logging
+    wandb.init(project="mnist-baseline-tests", entity="ucl-dark", dir=output_path, reinit=True)
+    wandb.config.update(args)
+
+    logging.info(f'\n\nStaring run\n')
+
+    run(seed=args.seed,
+        epochs=args.epochs,
+        lr=args.lr,
+        kernel_size=args.kernel_size,
+        training_type=args.training_type,
+        continual_order=args.continual_order,
+        label_level=args.label_level)
