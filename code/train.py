@@ -125,7 +125,6 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
 
                 if norm == 'l1':
                     l1_norm = sum(torch.sum(torch.abs(param)) for param in model.parameters())
-                    logging.info(f'L1 norm is: {l1_norm}')
                     loss = F.nll_loss(output, target) + reg_lambda * l1_norm
                 else:
                     loss = F.nll_loss(output, target)
