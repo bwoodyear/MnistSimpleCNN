@@ -79,7 +79,7 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
     if 'labels' in training_type:
         model = Model(kernel_size=kernel_size, label_level=label_level).to(device)
     else:
-        model = Model().to(device)
+        model = Model(kernel_size=kernel_size).to(device)
 
     # To get an overview of the model size and memory requirements feed dummy values into summary
     dummy_data = torch.rand((batch_size, 1, 28, 28))
