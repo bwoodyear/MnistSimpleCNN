@@ -166,10 +166,7 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
                         target = torch.flatten(target_and_label[:, 0]).to(device, dtype=torch.int64)
                         labels = torch.flatten(target_and_label[:, 1]).to(device, dtype=torch.int64)
 
-                        if 'labels' in training_type:
-                            output = model(data, labels)
-                        else:
-                            output = model(data)
+                        output = model(data, labels)
 
                         loss = F.nll_loss(output, target, reduction='sum').item()
 
@@ -247,4 +244,6 @@ if __name__ == "__main__":
         kernel_size=args.kernel_size,
         training_type=args.training_type,
         continual_order=args.continual_order,
-        label_level=args.label_level)
+        label_level=args.label_level,
+        norm=args.norm,
+        reg_lambda=args.reg_lambda)
