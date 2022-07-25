@@ -7,9 +7,9 @@ from torchvision import transforms
 
 dirname = os.path.dirname(__file__)
 
-digit = 'digit'
-fashion = 'fashion'
-kuzushiji = 'kuzushiji'
+digit = 'MNIST'
+fashion = 'FMNIST'
+kuzushiji = 'KMNIST'
 
 # TODO are just different int labels fine?
 DATASET_LABELS = {digit: 0,

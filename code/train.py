@@ -90,7 +90,7 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, data
     # training and evaluation loop ------------------------------------------------#
     for train_dataset_name, train_loader in train_loader_dict.items():
         for epoch in range(epochs):
-            logging.info(f'starting epoch {epoch+1} of {train_dataset_name} MNIST')
+            logging.info(f'starting epoch {epoch+1} of {train_dataset_name}')
             logging.info(f'current learning rate: {lr_scheduler.get_last_lr()[0]:.1E}')
 
             # --------------------------------------------------------------------------#
@@ -143,8 +143,8 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, data
             total_target = np.zeros(0)
 
             # Keep track of loss and correct predictions for each dataset
-            dataset_test_loss = {'digit': 0, 'fashion': 0}
-            dataset_test_correct = {'digit': 0, 'fashion': 0}
+            dataset_test_loss = {dataset_name: 0 for dataset_name in dataset_order}
+            dataset_test_correct = {dataset_name: 0 for dataset_name in dataset_order}
 
             with torch.no_grad():
                 for test_dataset_name, test_loader in test_loader_dict.items():
