@@ -202,7 +202,7 @@ if __name__ == "__main__":
     p.add_argument("-s", "--seed", type=int, default=0, help='random seed for torch')
     p.add_argument("--lr", default=1e-3, type=float, help='initial learning rate')
     p.add_argument("-e", "--epochs", default=10, type=int, help='number of epochs to train for')
-    p.add_argument("-k", "--kernel_size", default=5, type=int, help='size of convolution kernels to use',
+    p.add_argument("-k", "--kernel_size", default=3, type=int, help='size of convolution kernels to use',
                    choices=[3, 5, 7])
     p.add_argument("-t", "--training_type", required=True, type=str, help='type of training for the datasets',
                    choices=['multi-task', 'continual', 'multi-task_labels', 'continual_labels'])
