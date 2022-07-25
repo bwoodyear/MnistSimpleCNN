@@ -206,7 +206,8 @@ if __name__ == "__main__":
                    choices=[3, 5, 7])
     p.add_argument("-t", "--training_type", required=True, type=str, help='type of training for the datasets',
                    choices=['multi-task', 'continual', 'multi-task_labels', 'continual_labels'])
-    p.add_argument("--dataset_order", type=str, nargs='*',  help='datasets to use, with order for continual training',
+    p.add_argument("-o", "--dataset_order", type=str, nargs='*',
+                   help='datasets to use, with the order used for continual training',
                    choices=[digit, fashion, kuzushiji])
     p.add_argument("-ll", "--label_level", type=int, help='which number layer to insert dataset labels at in the '
                                                           'network')
