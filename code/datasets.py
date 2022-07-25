@@ -7,15 +7,22 @@ from torchvision import transforms
 
 dirname = os.path.dirname(__file__)
 
-DATASET_LABELS = {'digit': 0,
-                  'fashion': 1}
+digit = 'digit'
+fashion = 'fashion'
+kuzushiji = 'kuzushiji'
 
-FOLDER_NAMES = {'digit': 'MNIST',
-                'fashion': 'FashionMNIST'}
+# TODO are just different int labels fine?
+DATASET_LABELS = {digit: 0,
+                  fashion: 1,
+                  kuzushiji: 2}
+
+FOLDER_NAMES = {digit: 'MNIST',
+                fashion: 'FashionMNIST',
+                kuzushiji: 'KMNIST'}
 
 
 def read_data_files(dataset_name, split):
-    assert dataset_name in {'digit', 'fashion'}
+    assert dataset_name in set(FOLDER_NAMES.keys())
     assert split in {'train', 'test'}
 
     folder_name = FOLDER_NAMES[dataset_name]
@@ -36,36 +43,31 @@ def read_data_files(dataset_name, split):
     ys = ys.astype(np.int)
 
     # Stack the dataset label with the ys
-    labels = np.full_like(ys, DATASET_LABELS[dataset_name])
+    ys_with_label = np.full_like(ys, DATASET_LABELS[dataset_name])
 
-    return xs, np.stack([ys, labels], axis=1)
+    return xs, np.stack([ys, ys_with_label], axis=1)
 
 
 class MnistDataset(torch.utils.data.Dataset):
-    def __init__(self, training=True, transform=None, digit=False, fashion=False):
+    def __init__(self, training=True, transform=None, dataset_names=()):
         """
         Create the class for MNIST datasets.
 
         :param training: bool, whether this is the training or test set
         :param transform: torchvision transforms, what transformations to apply to the images
-        :param digit: bool, whether to load the digit MNIST dataset
-        :param fashion: bool, whether to load the fashion MNIST dataset
+        :param dataset_names: tuple of the dataset names to include
         """
         split = 'train' if training else 'test'
 
         x_dataset_list = []
         y_dataset_list = []
 
-        if digit:
-            x_digit, y_digit = read_data_files('digit', split)
-            x_dataset_list.append(x_digit)
-            y_dataset_list.append(y_digit)
-        if fashion:
-            x_fashion, y_fashion = read_data_files('fashion', split)
-            x_dataset_list.append(x_fashion)
-            y_dataset_list.append(y_fashion)
+        for name in dataset_names:
+            x, y = read_data_files(name, split)
+            x_dataset_list.append(x)
+            y_dataset_list.append(y)
         if not x_dataset_list or not y_dataset_list:
-            raise ValueError('One of digit or fashion MNIST must be selected.')
+            raise ValueError('No datasets have been selected.')
 
         # Join datasets together
         xs = np.concatenate(x_dataset_list, axis=0)

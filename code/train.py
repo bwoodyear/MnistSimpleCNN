@@ -8,16 +8,15 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import transforms
 from torchinfo import summary
-from datasets import MnistDataset
+from datasets import MnistDataset, digit, fashion, kuzushiji
 from models.base_model import Model
-from collections import OrderedDict
 import ipdb
 
 dirname = os.path.dirname(__file__)
 output_path = os.path.join(dirname, '..', 'logs')
 
 
-def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, continual_order=None,
+def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, dataset_order: list = None,
         norm=None, reg_lambda=None, label_level=None):
 
     # random number generator seed ------------------------------------------------#
@@ -44,36 +43,27 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, cont
     # data loader -----------------------------------------------------------------#
     batch_size = 100
 
+    train_loader_dict = {}
     if training_type in {'multi-task', 'multi-task_labels'}:
-        train_dataset = MnistDataset(training=True, transform=transform,
-                                     digit=True, fashion=True)
+        train_dataset = MnistDataset(training=True, transform=transform, dataset_names=dataset_order)
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        train_loader_dict = {'combined': train_loader}
+        train_loader_dict['combined'] = train_loader
+
     elif training_type == 'continual':
-        digit_dataset = MnistDataset(training=True, transform=transform, digit=True)
-        fashion_dataset = MnistDataset(training=True, transform=transform, fashion=True)
+        for dataset_name in dataset_order:
+            single_dataset = MnistDataset(training=True, transform=transform, dataset_names=(dataset_name,))
+            single_loader = torch.utils.data.DataLoader(single_dataset, batch_size=batch_size, shuffle=True)
+            train_loader_dict[dataset_name] = single_loader
 
-        # Create a loader for each of the datasets
-        digit_loader = torch.utils.data.DataLoader(digit_dataset, batch_size=batch_size, shuffle=True)
-        fashion_loader = torch.utils.data.DataLoader(fashion_dataset, batch_size=batch_size, shuffle=True)
-
-        # Put the data loaders in the specified order
-        if continual_order == 'digit_first':
-            train_loader_dict = OrderedDict([('digit', digit_loader), ('fashion', fashion_loader)])
-        elif continual_order == 'fashion_first':
-            train_loader_dict = OrderedDict([('fashion', fashion_loader), ('digit', digit_loader)])
-        else:
-            raise ValueError(f'Continual learning with this order: {continual_order} not recognised')
     else:
         raise NotImplementedError(f'This training type: {training_type} has not been implemented.')
 
-    digit_test_dataset = MnistDataset(training=False, transform=None, digit=True)
-    digit_test_loader = torch.utils.data.DataLoader(digit_test_dataset, batch_size=batch_size, shuffle=False)
-
-    fashion_test_dataset = MnistDataset(training=False, transform=None, fashion=True)
-    fashion_test_loader = torch.utils.data.DataLoader(fashion_test_dataset, batch_size=batch_size, shuffle=False)
-
-    test_loader_dict = {'digit': digit_test_loader, 'fashion': fashion_test_loader}
+    # Create dict of test DataLoaders for each individual dataset
+    test_loader_dict = {}
+    for dataset_name in dataset_order:
+        single_dataset = MnistDataset(training=True, transform=transform, dataset_names=(dataset_name,))
+        single_loader = torch.utils.data.DataLoader(single_dataset, batch_size=batch_size, shuffle=True)
+        test_loader_dict[dataset_name] = single_loader
 
     # model selection -------------------------------------------------------------#
     model = Model(kernel_size=kernel_size, label_level=label_level).to(device)
@@ -216,8 +206,8 @@ if __name__ == "__main__":
                    choices=[3, 5, 7])
     p.add_argument("-t", "--training_type", required=True, type=str, help='type of training for the datasets',
                    choices=['multi-task', 'continual', 'multi-task_labels', 'continual_labels'])
-    p.add_argument("--continual_order", type=str, help='dataset order for continual training',
-                   choices=['digit_first', 'fashion_first'])
+    p.add_argument("--dataset_order", type=str, nargs='*',  help='datasets to use, with order for continual training',
+                   choices=[digit, fashion, kuzushiji])
     p.add_argument("-ll", "--label_level", type=int, help='which number layer to insert dataset labels at in the '
                                                           'network')
     p.add_argument("--norm", type=str, help='type of norm for regularisation',
@@ -242,7 +232,7 @@ if __name__ == "__main__":
         lr=args.lr,
         kernel_size=args.kernel_size,
         training_type=args.training_type,
-        continual_order=args.continual_order,
+        dataset_order=args.dataset_order,
         label_level=args.label_level,
         norm=args.norm,
         reg_lambda=args.reg_lambda)
