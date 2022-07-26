@@ -180,7 +180,7 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, data
             total_test_loss /= total_test_points
             test_accuracy = 100 * total_correct / total_test_points
 
-            logging.info(f'epoch {epoch+1} test accuracy: {test_accuracy}')
+            logging.info(f'epoch {epoch+1} test accuracy: {test_accuracy:.2d}')
 
             wandb.log({'epoch test loss': total_test_loss,
                        'epoch test accuracy': test_accuracy})
