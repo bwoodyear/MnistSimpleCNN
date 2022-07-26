@@ -68,10 +68,11 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, data
     # model selection -------------------------------------------------------------#
     model = Model(kernel_size=kernel_size, label_level=label_level).to(device)
 
-    # To get an overview of the model size and memory requirements feed dummy values into summary
-    dummy_data = torch.rand((batch_size, 1, 28, 28))
-    dummy_labels = torch.randint(0, 2, (batch_size,))
-    summary(model, input_data=[dummy_data, dummy_labels])
+    if not label_level:
+        # To get an overview of the model size and memory requirements feed dummy values into summary
+        dummy_data = torch.rand((batch_size, 1, 28, 28))
+        dummy_labels = torch.randint(0, 2, (batch_size,))
+        summary(model, input_data=[dummy_data, dummy_labels])
 
     # hyperparameter selection ----------------------------------------------------#
     exp_lr_gamma = 0.95
