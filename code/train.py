@@ -60,7 +60,7 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, data
 
     # Create dict of test DataLoaders for each individual dataset
     test_loader_dict = {}
-    for dataset_name in dataset_order:
+    for dataset_name in {digit, fashion, kuzushiji}:
         single_dataset = MnistDataset(training=True, transform=transform, dataset_names=(dataset_name,))
         single_loader = torch.utils.data.DataLoader(single_dataset, batch_size=batch_size, shuffle=True)
         test_loader_dict[dataset_name] = single_loader
@@ -225,7 +225,8 @@ if __name__ == "__main__":
     assert set(args.dataset_order).issubset({digit, fashion, kuzushiji})
 
     # Setup wandb logging
-    wandb.init(project="mnist-baseline-tests", entity="ucl-dark", dir=output_path, reinit=True)
+    run_name = f'{args.training_type}_{"-".join(args.dataset_order)}_seed-{args.seed}'
+    wandb.init(name=run_name, project="mnist-baseline-tests", entity="ucl-dark", dir=output_path, reinit=True)
     wandb.config.update(args)
 
     logging.info(f'\n\nStaring run\n')
