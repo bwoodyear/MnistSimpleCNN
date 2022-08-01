@@ -28,24 +28,49 @@
 #python3 train.py --training_type multi-task --epochs 10 --seed 0 -v --norm l2 --reg_lambda 1e-6
 #python3 train.py --training_type multi-task --epochs 10 --seed 0 -v --norm l2 --reg_lambda 1e-5
 
+## Baselines training on one dataset
+#python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o MNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 1 -v -o MNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 2 -v -o MNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 3 -v -o MNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 4 -v -o MNIST
+#
+#python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o FMNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 1 -v -o FMNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 2 -v -o FMNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 3 -v -o FMNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 4 -v -o FMNIST
+#
+#python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o KMNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 1 -v -o KMNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 2 -v -o KMNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 3 -v -o KMNIST
+#python3 train.py --training_type multi-task --epochs 10 --seed 4 -v -o KMNIST
 
-python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o MNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 1 -v -o MNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 2 -v -o MNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 3 -v -o MNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 4 -v -o MNIST
 
-python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o FMNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 1 -v -o FMNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 2 -v -o FMNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 3 -v -o FMNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 4 -v -o FMNIST
+# Baselines training on two datasets
+python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o MNIST FMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 1 -v -o MNIST FMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 2 -v -o MNIST FMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 3 -v -o MNIST FMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 4 -v -o MNIST FMNIST
 
-python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o KMNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 1 -v -o KMNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 2 -v -o KMNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 3 -v -o KMNIST
-python3 train.py --training_type multi-task --epochs 10 --seed 4 -v -o KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o MNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 1 -v -o MNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 2 -v -o MNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 3 -v -o MNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 4 -v -o MNIST KMNIST
+
+python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o FMNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 1 -v -o FMNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 2 -v -o FMNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 3 -v -o FMNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 4 -v -o FMNIST KMNIST
 
 
-
+# Baselines on all three
+python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o MNIST FMNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 1 -v -o MNIST FMNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 2 -v -o MNIST FMNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 3 -v -o MNIST FMNIST KMNIST
+python3 train.py --training_type multi-task --epochs 10 --seed 4 -v -o MNIST FMNIST KMNIST
