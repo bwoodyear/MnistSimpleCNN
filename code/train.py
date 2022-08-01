@@ -14,7 +14,7 @@ import ipdb
 
 dirname = os.path.dirname(__file__)
 output_path = os.path.join(dirname, '..', 'logs')
-
+all_datasets = {digit, fashion, kuzushiji}
 
 def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, dataset_order: list = None,
         norm=None, reg_lambda=None, label_level=None):
@@ -60,7 +60,7 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, data
 
     # Create dict of test DataLoaders for each individual dataset
     test_loader_dict = {}
-    for dataset_name in {digit, fashion, kuzushiji}:
+    for dataset_name in all_datasets:
         single_dataset = MnistDataset(training=True, transform=transform, dataset_names=(dataset_name,))
         single_loader = torch.utils.data.DataLoader(single_dataset, batch_size=batch_size, shuffle=True)
         test_loader_dict[dataset_name] = single_loader
@@ -144,8 +144,8 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, data
             total_target = np.zeros(0)
 
             # Keep track of loss and correct predictions for each dataset
-            dataset_test_loss = {dataset_name: 0 for dataset_name in dataset_order}
-            dataset_test_correct = {dataset_name: 0 for dataset_name in dataset_order}
+            dataset_test_loss = {dataset_name: 0 for dataset_name in all_datasets}
+            dataset_test_correct = {dataset_name: 0 for dataset_name in all_datasets}
 
             with torch.no_grad():
                 for test_dataset_name, test_loader in test_loader_dict.items():
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     else:
         logging.disable(logging.CRITICAL)
 
-    assert set(args.dataset_order).issubset({digit, fashion, kuzushiji})
+    assert set(args.dataset_order).issubset(all_datasets)
 
     # Setup wandb logging
     run_name = f'{args.training_type}_{"-".join(args.dataset_order)}_seed-{args.seed}'
