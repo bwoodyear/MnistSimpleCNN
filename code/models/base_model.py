@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.utils.prune as prune
 import numpy as np
 from itertools import tee
 
@@ -35,6 +36,7 @@ class Model(nn.Module):
         super(Model, self).__init__()
 
         self.label_level = label_level
+        self.linear = None
         self.net = self.setup_net(kernel_size)
 
     def setup_net(self, kernel_size: int):
@@ -65,27 +67,39 @@ class Model(nn.Module):
                 i += 1
 
             if n:
-                # Follow each conv after first with a batchnorm and a relu
-                layers.append(nn.BatchNorm2d(i))
-                layers.append(nn.ReLU())
+                # Follow each conv after first with a batch norm and a relu
+                bn = nn.BatchNorm2d(i)
+                # setattr(self, f'bn{n+1}', bn)
+                layers.append(bn)
+
+                relu = nn.ReLU()
+                # setattr(self, f'relu{n+1}', bn)
+                layers.append(relu)
 
             # Add each conv layer with the given input and output size
-            layers.append(nn.Conv2d(i, o, kernel_size, bias=False))
+            conv = nn.Conv2d(i, o, kernel_size, bias=False)
+            # setattr(self, f'conv{n+1}', conv)
+            layers.append(conv)
 
         # Add the final linear layer
         layers.append(nn.Flatten())
-        layers.append(nn.Linear(fc_value, 10, bias=False))
+        
+        self.linear = nn.Linear(fc_value, 10, bias=False)
+        layers.append(self.linear)
         layers.append(nn.BatchNorm1d(10))
 
         return layers
 
-    def forward(self, x, labels: torch.tensor = None):
+    def forward(self, x, labels: torch.tensor = None, prune_type=None, mask: torch.tensor = None):
         x = (x - 0.5) * 2.0
         # Iterate through the layers, injecting labels if specified
         for n, l in enumerate(self.net):
+
             # If at the level where labels are being injected project these to the correct dimension then insert
             if n+1 == self.label_level:
                 label_tensor = labels[:, None, None].expand(-1, x.shape[-2], x.shape[-1])
                 x = torch.cat((x, label_tensor.unsqueeze(1)), dim=1)
+            if prune_type == 'L1' and isinstance(l, nn.Linear):
+                prune.L1Unstructured()
             x = l(x)
         return nn.functional.log_softmax(x, dim=1)

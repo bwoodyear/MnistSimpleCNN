@@ -16,6 +16,7 @@ dirname = os.path.dirname(__file__)
 output_path = os.path.join(dirname, '..', 'logs')
 all_datasets = {digit, fashion, kuzushiji}
 
+
 def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, dataset_order: list = None,
         norm=None, reg_lambda=None, label_level=None):
 

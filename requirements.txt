@@ -2,5 +2,7 @@ numpy
 pandas
 scipy
 wandb
+torch
+torchvision
 torchinfo
 ipdb
