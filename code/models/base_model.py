@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.utils.prune as prune
-import numpy as np
 from itertools import tee
 
 
@@ -90,7 +88,7 @@ class Model(nn.Module):
 
         return layers
 
-    def forward(self, x, labels: torch.tensor = None, prune_type=None, mask: torch.tensor = None):
+    def forward(self, x, labels: torch.tensor = None):
         x = (x - 0.5) * 2.0
         # Iterate through the layers, injecting labels if specified
         for n, l in enumerate(self.net):
@@ -99,7 +97,5 @@ class Model(nn.Module):
             if n+1 == self.label_level:
                 label_tensor = labels[:, None, None].expand(-1, x.shape[-2], x.shape[-1])
                 x = torch.cat((x, label_tensor.unsqueeze(1)), dim=1)
-            if prune_type == 'L1' and isinstance(l, nn.Linear):
-                prune.L1Unstructured()
             x = l(x)
         return nn.functional.log_softmax(x, dim=1)

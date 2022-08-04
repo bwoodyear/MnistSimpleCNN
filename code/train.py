@@ -10,6 +10,8 @@ from torchvision import transforms
 from torchinfo import summary
 from datasets import MnistDataset, digit, fashion, kuzushiji
 from models.base_model import Model
+import torch.nn.utils.prune as prune
+from masking.masking_model import Mask
 import ipdb
 
 dirname = os.path.dirname(__file__)
@@ -18,7 +20,7 @@ all_datasets = {digit, fashion, kuzushiji}
 
 
 def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, dataset_order: list = None,
-        norm=None, reg_lambda=None, label_level=None):
+        norm=None, reg_lambda=None, label_level=None, prune_type=None):
 
     # random number generator seed ------------------------------------------------#
     torch.backends.cudnn.deterministic = True
@@ -134,6 +136,11 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, data
             wandb.log({f'{train_dataset_name} epoch train loss': train_loss,
                        f'{train_dataset_name} epoch train accuracy': train_accuracy})
 
+            if prune_type == 'l1':
+                prune.l1_unstructured(model.linear, name='weight', amount=0.05)
+            elif prune_type == 'dynamic':
+                prune.custom_from_mask(model.linear, name='weight', mask=None)
+
             # --------------------------------------------------------------------------#
             # test process                                                              #
             # --------------------------------------------------------------------------#
@@ -216,6 +223,9 @@ if __name__ == "__main__":
                    choices=['l1', 'l2'])
     p.add_argument("--reg_lambda", type=float, default=1e-3, help='lambda for the regularization term')
     p.add_argument("-v", "--verbose", action='store_true')
+    p.add_argument("--prune_type", type=str, help='type of pruning to use',
+                   choices=['l1', 'dynamic'])
+    p.add_argument("--prune_amount", type=float, help='type of pruning to use')
     args = p.parse_args()
 
     if args.verbose:
@@ -240,4 +250,5 @@ if __name__ == "__main__":
         dataset_order=args.dataset_order,
         label_level=args.label_level,
         norm=args.norm,
-        reg_lambda=args.reg_lambda)
+        reg_lambda=args.reg_lambda,
+        prune_type=args.prune_type)
