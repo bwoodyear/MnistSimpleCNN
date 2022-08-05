@@ -20,7 +20,7 @@ all_datasets = {digit, fashion, kuzushiji}
 
 
 def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, dataset_order: list = None,
-        norm=None, reg_lambda=None, label_level=None, prune_type=None):
+        norm=None, reg_lambda=None, label_level=None, prune_type=None, prune_amount=None):
 
     # random number generator seed ------------------------------------------------#
     torch.backends.cudnn.deterministic = True
@@ -139,7 +139,7 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, data
             if prune_type == 'l1':
                 sparse_fraction = 1 - torch.count_nonzero(model.linear.weight).item() / torch.numel(model.linear.weight)
                 wandb.log({'sparse fraction': sparse_fraction})
-                prune.l1_unstructured(model.linear, name='weight', amount=0.05)
+                prune.l1_unstructured(model.linear, name='weight', amount=prune_amount)
             elif prune_type == 'dynamic':
                 prune.custom_from_mask(model.linear, name='weight', mask=None)
 
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     p.add_argument("-v", "--verbose", action='store_true')
     p.add_argument("--prune_type", type=str, help='type of pruning to use',
                    choices=['l1', 'dynamic'])
-    p.add_argument("--prune_amount", type=float, help='type of pruning to use')
+    p.add_argument("--prune_amount", type=float, help='fraction of weights to prune with each pass')
     args = p.parse_args()
 
     if args.verbose:
@@ -253,4 +253,5 @@ if __name__ == "__main__":
         label_level=args.label_level,
         norm=args.norm,
         reg_lambda=args.reg_lambda,
-        prune_type=args.prune_type)
+        prune_type=args.prune_type,
+        prune_amount=args.prune_amount)

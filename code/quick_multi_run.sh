@@ -76,5 +76,9 @@
 #python3 train.py --training_type multi-task --epochs 10 --seed 4 -v -o MNIST FMNIST KMNIST
 
 
-python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o MNIST FMNIST KMNIST --prune_type l1
+python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o MNIST FMNIST KMNIST --prune_type l1 --prune_amount 0.01
+python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o MNIST FMNIST KMNIST --prune_type l1 --prune_amount 0.05
+python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o MNIST FMNIST KMNIST --prune_type l1 --prune_amount 0.10
+python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o MNIST FMNIST KMNIST --prune_type l1 --prune_amount 0.20
+python3 train.py --training_type multi-task --epochs 10 --seed 0 -v -o MNIST FMNIST KMNIST --prune_type l1 --prune_amount 0.30
 
