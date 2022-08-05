@@ -137,6 +137,8 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, data
                        f'{train_dataset_name} epoch train accuracy': train_accuracy})
 
             if prune_type == 'l1':
+                sparse_fraction = 1 - torch.count_nonzero(model.linear.weight).item() / torch.numel(model.linear.weight)
+                wandb.log({'sparse fraction': sparse_fraction})
                 prune.l1_unstructured(model.linear, name='weight', amount=0.05)
             elif prune_type == 'dynamic':
                 prune.custom_from_mask(model.linear, name='weight', mask=None)
