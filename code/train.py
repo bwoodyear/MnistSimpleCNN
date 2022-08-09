@@ -19,8 +19,15 @@ output_path = os.path.join(dirname, '..', 'logs')
 all_datasets = {digit, fashion, kuzushiji}
 
 
-def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, dataset_order: list = None,
-        norm=None, reg_lambda=None, label_level=None, prune_type=None, prune_amount=None):
+def run(seed=0, return_model=False, epochs=None, lr=None, kernel_size=None, training_type=None,
+        dataset_order: list = None, norm=None, reg_lambda=None, label_level=None, prune_type=None, prune_amount=None):
+
+    logging.info(f'\n\nStaring run\n')
+
+    # Setup wandb logging
+    run_name = f'evojax_mnist_training_seed-{args.seed}'
+    wandb.init(name=run_name, project="mnist-baseline-tests", entity="ucl-dark", dir=output_path, reinit=True)
+    wandb.config.update(args)
 
     # random number generator seed ------------------------------------------------#
     torch.backends.cudnn.deterministic = True
@@ -207,6 +214,11 @@ def run(seed=0, epochs=None, lr=None, kernel_size=None, training_type=None, data
             # --------------------------------------------------------------------------#
             lr_scheduler.step()
 
+    if return_model:
+        return model
+
+    wandb.finish()
+
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
@@ -236,13 +248,6 @@ if __name__ == "__main__":
         logging.disable(logging.CRITICAL)
 
     assert set(args.dataset_order).issubset(all_datasets)
-
-    # Setup wandb logging
-    run_name = f'{args.training_type}_{"-".join(args.dataset_order)}_seed-{args.seed}'
-    wandb.init(name=run_name, project="mnist-baseline-tests", entity="ucl-dark", dir=output_path, reinit=True)
-    wandb.config.update(args)
-
-    logging.info(f'\n\nStaring run\n')
 
     run(seed=args.seed,
         epochs=args.epochs,
