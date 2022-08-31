@@ -228,6 +228,7 @@ if __name__ == "__main__":
     p.add_argument("--prune_type", type=str, help='type of pruning to use',
                    choices=['l1', 'dynamic'])
     p.add_argument("--prune_amount", type=float, help='fraction of weights to prune with each pass')
+    p.add_argument("--transforms", action='store_true', help='whether to use transforms')
     args = p.parse_args()
 
     if args.verbose:

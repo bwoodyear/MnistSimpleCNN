@@ -14,7 +14,9 @@ class Mask(nn.Module):
         self.mask_size = in_features * out_features
 
         self.net = nn.Sequential(nn.Linear(1, 10),
+                                 nn.ReLU(),
                                  nn.Linear(10, 100),
+                                 nn.ReLU(),
                                  nn.Linear(100, self.mask_size),
                                  nn.Sigmoid())
 
